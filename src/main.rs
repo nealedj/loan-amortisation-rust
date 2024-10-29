@@ -44,7 +44,7 @@ fn main() {
 
         print_row(month, period_payment, principal_payment, interest, balance);
 
-        interest_payable_from = next_cap_date;
+        interest_payable_from = next_cap_date + Days::new(1);
         next_cap_date = next_cap_date + Months::new(1);
         next_payment_date = next_payment_date + Months::new(1);
 
@@ -63,9 +63,11 @@ fn calculate_period_interest(start_date: NaiveDate, to_date: NaiveDate, payment_
     while current_date <= to_date {
 
         if current_date.leap_year() {
+            // Adjust daily rate for leap year
             daily_rate_m *= Decimal::from(365) / Decimal::from(366);
         }
 
+        // Reduce balance on payment date
         if current_date == payment_date {
             balance_m -= payment_amount;
         }
