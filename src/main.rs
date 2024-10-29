@@ -1,11 +1,12 @@
 use rust_decimal::Decimal;
 use rust_decimal::prelude::*;
-use std::io;
 use std::str::FromStr;
+use chrono::{NaiveDate, Months, Days};
 
 const DEFAULT_SCALE: u32 = 2;
 const DEFAULT_PRECISION: u32 = 28;
 const DEFAULT_ROUNDING: RoundingStrategy = RoundingStrategy::MidpointAwayFromZero;
+const PERIODS_PER_YEAR: u32 = 12;
 
 fn main() {
     println!("Loan Amortisation Schedule Calculator");
@@ -17,23 +18,35 @@ fn main() {
     let principal = Decimal::from(15000); // convert to pence
     let annual_rate = Decimal::from_str("8.9").unwrap() / Decimal::from(100); // convert to basis points
     let num_payments = 36;
+    let disbursal_date = NaiveDate::from_ymd_opt(2024, 10, 29).unwrap();
+    let first_payment_date = NaiveDate::from_ymd_opt(2024, 12, 1).unwrap();
+    let first_capitalisation_date = NaiveDate::from_ymd_opt(2024, 11, 1).unwrap();
 
-    // Calculate monthly payment (in pence)
-    // Convert basis points to monthly rate, scaled
-    let monthly_rate = annual_rate / Decimal::from(12);
+    // Calculate period payment (in pence)
+    // Convert basis points to period rate, scaled
+    let period_rate = annual_rate / Decimal::from(PERIODS_PER_YEAR);
+    let daily_rate = annual_rate / Decimal::from(365);
 
-    let monthly_payment = calculate_monthly_payment(principal, monthly_rate, num_payments);
-    println!("\nMonthly Payment: ${:.2}", monthly_payment);
-    println!("\nAmortization Schedule:");
+    let period_payment = calculate_rough_period_payment(principal, period_rate, num_payments);
+    println!("\nperiod Payment: ${:.2}", period_payment);
+    println!("\nAmortisation Schedule:");
     println!("Month | Payment | Principal | Interest | Remaining Balance");
 
     let mut balance = principal;
+    let mut interest_payable_from = disbursal_date;
+    let mut next_cap_date = first_capitalisation_date;
+    let mut next_payment_date = first_payment_date;
+
     for month in 1..=num_payments {
-        let interest = round_decimal(balance * monthly_rate, None, None, None);
-        let principal_payment = round_decimal(monthly_payment - interest, None, None, None);
+        let interest = calculate_period_interest(interest_payable_from, next_cap_date, next_payment_date, daily_rate, balance, period_payment);
+        let principal_payment = round_decimal(period_payment - interest, None, None, None);
         balance = round_decimal(balance-principal_payment, None, None, None);
 
-        print_row(month, monthly_payment, principal_payment, interest, balance);
+        print_row(month, period_payment, principal_payment, interest, balance);
+
+        interest_payable_from = next_cap_date;
+        next_cap_date = next_cap_date + Months::new(1);
+        next_payment_date = next_payment_date + Months::new(1);
 
         if balance < Decimal::from_str("0.01").unwrap() {
             break;
@@ -41,10 +54,34 @@ fn main() {
     }
 }
 
-fn calculate_monthly_payment(principal: Decimal, monthly_rate: Decimal, num_payments: i32) -> Decimal {
+fn calculate_period_interest(start_date: NaiveDate, to_date: NaiveDate, payment_date: NaiveDate, daily_rate: Decimal, balance: Decimal, payment_amount: Decimal) -> Decimal {
+    let mut current_date = start_date;
+    let mut interest = Decimal::from(0);
+
+    let mut balance_m = balance;
+    let mut daily_rate_m = daily_rate;
+    while current_date <= to_date {
+
+        if current_date.leap_year() {
+            daily_rate_m *= Decimal::from(365) / Decimal::from(366);
+        }
+
+        if current_date == payment_date {
+            balance_m -= payment_amount;
+        }
+
+        interest += balance_m * daily_rate_m;
+
+        current_date = current_date + Days::new(1)
+    }
+
+    interest
+}
+
+fn calculate_rough_period_payment(principal: Decimal, period_rate: Decimal, num_payments: i32) -> Decimal {
     let one = Decimal::from(1);
-    let factor = (one + monthly_rate).powd(Decimal::from(num_payments));
-    round_decimal((principal * monthly_rate * factor) / (factor - one), None, None, None)
+    let factor = (one + period_rate).powd(Decimal::from(num_payments));
+    round_decimal((principal * period_rate * factor) / (factor - one), None, None, None)
 }
 
 fn round_decimal(value: Decimal, precision: Option<u32>, scale: Option<u32>, rounding: Option<RoundingStrategy>) -> Decimal {
@@ -55,30 +92,6 @@ fn round_decimal(value: Decimal, precision: Option<u32>, scale: Option<u32>, rou
 }
 
 fn print_row(month: i32, payment: Decimal, principal: Decimal, interest: Decimal, balance: Decimal) {
-    println!("{:5} | ${:7.2} | ${:9.2} | ${:8.2} | ${:17.2}", 
+    println!("{:5} | {:7.2} | {:9.2} | {:8.2} | {:17.2}", 
              month, payment, principal, interest, balance);
-}
-
-fn get_decimal_input(prompt: &str) -> Decimal {
-    loop {
-        println!("{}", prompt);
-        let mut input = String::new();
-        io::stdin().read_line(&mut input).expect("Failed to read line");
-        match Decimal::from_str(input.trim()) {
-            Ok(num) => return num,
-            Err(_) => println!("Please enter a valid number."),
-        }
-    }
-}
-
-fn get_integer_input(prompt: &str) -> i32 {
-    loop {
-        println!("{}", prompt);
-        let mut input = String::new();
-        io::stdin().read_line(&mut input).expect("Failed to read line");
-        match input.trim().parse() {
-            Ok(num) => return num,
-            Err(_) => println!("Please enter a valid integer."),
-        }
-    }
 }
