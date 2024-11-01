@@ -51,6 +51,10 @@ The executable will be located in the target/debug or target/release directory, 
 ### Running Tests
 To run the tests for this project, use the following command:
 
+```sh
+cargo test
+```
+
 ### Dependencies
 This project uses the following dependencies:
 
