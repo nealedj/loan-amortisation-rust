@@ -30,7 +30,7 @@ struct Payment {
 fn main() {
     let matches = Command::new("Loan Amortisation Schedule Calculator")
         .version("1.0")
-        .author("Author Name <author@example.com>")
+        .author("David Neale <david@neale.dev>")
         .about("Calculates loan amortisation schedules")
         .arg(Arg::new("principal")
             .short('p')
