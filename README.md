@@ -1,5 +1,7 @@
 # Loan Amortisation Schedule Calculator
 
+![Rust](https://github.com/nealedj/loan-amortisation-rust/actions/workflows/rust.yml/badge.svg)
+
 This Rust application calculates loan amortisation schedules. It takes several parameters as command line arguments and outputs a detailed amortisation schedule.
 
 ## Features
