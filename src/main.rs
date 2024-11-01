@@ -8,6 +8,16 @@ const DEFAULT_PRECISION: u32 = 28;
 const DEFAULT_ROUNDING: RoundingStrategy = RoundingStrategy::MidpointAwayFromZero;
 const PERIODS_PER_YEAR: u32 = 12;
 
+const DEFAULT_INTEREST_METHOD : InterestMethod = InterestMethod::ActualActual;
+
+#[derive(PartialEq, Copy, Clone)]
+enum InterestMethod {
+    Convention30_360,
+    Actual365,
+    Actual360,
+    ActualActual,
+}
+
 fn main() {
     println!("Loan Amortisation Schedule Calculator");
 
@@ -21,10 +31,11 @@ fn main() {
     let disbursal_date = NaiveDate::from_ymd_opt(2024, 11, 1).unwrap();
     let first_payment_date = NaiveDate::from_ymd_opt(2024, 12, 1).unwrap();
     let first_capitalisation_date = NaiveDate::from_ymd_opt(2024, 12, 1).unwrap();
+    let interest_method = DEFAULT_INTEREST_METHOD;
 
     // Convert basis points to period rate, scaled
     let period_rate = annual_rate / Decimal::from(PERIODS_PER_YEAR);
-    let daily_rate = annual_rate / Decimal::from(365);
+    let daily_rate = get_daily_interest_rate(annual_rate, interest_method);
 
     let mut period_payment = calculate_rough_period_payment(principal, period_rate, num_payments);
     println!("\nperiod Payment: ${:.2}", period_payment);
@@ -33,25 +44,46 @@ fn main() {
 
     // let balance = build_schedule(principal, disbursal_date, first_capitalisation_date, first_payment_date, num_payments, daily_rate, period_payment);
 
-    let f = |period_payment| build_schedule(principal, disbursal_date, first_capitalisation_date, first_payment_date, num_payments, daily_rate, period_payment);
+    let f = |period_payment| build_schedule(principal, disbursal_date, first_capitalisation_date, first_payment_date, num_payments, daily_rate, period_payment, interest_method);
 
     match secant_method(f, period_payment, period_payment * Decimal::new(1, 2), Decimal::new(1, 6), 100) {
         Some(root) => period_payment = root,
         None => println!("Failed to converge"),
     }
 
-    build_schedule(principal, disbursal_date, first_capitalisation_date, first_payment_date, num_payments, daily_rate, period_payment);
+    build_schedule(principal, disbursal_date, first_capitalisation_date, first_payment_date, num_payments, daily_rate, period_payment, interest_method);
 
 }
 
-fn build_schedule(principal: Decimal, disbursal_date: NaiveDate, first_capitalisation_date: NaiveDate, first_payment_date: NaiveDate, num_payments: i32, daily_rate: Decimal, period_payment: Decimal) -> Decimal {
+fn get_daily_interest_rate(annual_rate: Decimal, interest_method: InterestMethod) -> Decimal {
+    let daily_rate: Decimal;
+
+    match interest_method {
+        InterestMethod::Convention30_360 => {
+            daily_rate = annual_rate / Decimal::from(360);
+        },
+        InterestMethod::Actual365 => {
+            daily_rate = annual_rate / Decimal::from(365);
+        },
+        InterestMethod::Actual360 => {
+            daily_rate = annual_rate / Decimal::from(360);
+        },
+        InterestMethod::ActualActual => {
+            daily_rate = annual_rate / Decimal::from(365); // adjusted later for leap years
+        }
+    }
+
+    daily_rate
+}
+
+fn build_schedule(principal: Decimal, disbursal_date: NaiveDate, first_capitalisation_date: NaiveDate, first_payment_date: NaiveDate, num_payments: i32, daily_rate: Decimal, period_payment: Decimal, interest_method: InterestMethod) -> Decimal {
     let mut balance = principal;
     let mut interest_payable_from = disbursal_date;
     let mut next_cap_date = first_capitalisation_date;
     let mut next_payment_date = first_payment_date;
 
     for month in 1..=num_payments {
-        let interest = calculate_period_interest(interest_payable_from, next_cap_date, next_payment_date, daily_rate, balance, period_payment);
+        let interest = calculate_period_interest(interest_payable_from, next_cap_date, next_payment_date, daily_rate, balance, period_payment, interest_method);
         let principal_payment = round_decimal(period_payment - interest, None, None, None);
         balance = round_decimal(balance-principal_payment, None, None, None);
     
@@ -70,7 +102,11 @@ fn build_schedule(principal: Decimal, disbursal_date: NaiveDate, first_capitalis
 }
 
 
-fn calculate_period_interest(start_date: NaiveDate, to_date: NaiveDate, payment_date: NaiveDate, daily_rate: Decimal, balance: Decimal, payment_amount: Decimal) -> Decimal {
+fn calculate_period_interest(start_date: NaiveDate, to_date: NaiveDate, payment_date: NaiveDate, daily_rate: Decimal, balance: Decimal, payment_amount: Decimal, interest_method: InterestMethod) -> Decimal {
+    if interest_method == InterestMethod::Convention30_360 {
+        return Decimal::from(30) * balance * daily_rate;
+    }
+
     let mut current_date = start_date;
     let mut interest = Decimal::from(0);
 
@@ -78,7 +114,7 @@ fn calculate_period_interest(start_date: NaiveDate, to_date: NaiveDate, payment_
     let mut daily_rate_m = daily_rate;
     while current_date <= to_date {
 
-        if current_date.leap_year() {
+        if interest_method == InterestMethod::ActualActual && current_date.leap_year() {
             // Adjust daily rate for leap year
             daily_rate_m *= Decimal::from(365) / Decimal::from(366);
         }
