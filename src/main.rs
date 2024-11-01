@@ -18,6 +18,15 @@ enum InterestMethod {
     ActualActual,
 }
 
+#[derive(Debug)]
+struct Payment {
+    month: u32,
+    payment: Decimal,
+    principal: Decimal,
+    interest: Decimal,
+    balance: Decimal,
+}
+
 fn main() {
     let matches = Command::new("Loan Amortisation Schedule Calculator")
         .version("1.0")
@@ -93,15 +102,23 @@ fn main() {
 
     // let balance = build_schedule(principal, disbursal_date, first_capitalisation_date, first_payment_date, num_payments, daily_rate, period_payment);
 
-    let f = |period_payment| build_schedule(principal, disbursal_date, first_capitalisation_date, first_payment_date, num_payments, daily_rate, period_payment, interest_method);
+    let f = |period_payment| {
+        let schedule = build_schedule(principal, disbursal_date, first_capitalisation_date, first_payment_date, num_payments, daily_rate, period_payment, interest_method);
+        schedule.last().unwrap().balance // final balance
+    };
 
     match secant_method(f, period_payment, period_payment * Decimal::new(1, 2), Decimal::new(1, 6), 100) {
         Some(root) => period_payment = root,
         None => println!("Failed to converge"),
     }
 
-    build_schedule(principal, disbursal_date, first_capitalisation_date, first_payment_date, num_payments, daily_rate, period_payment, interest_method);
+    let schedule = build_schedule(principal, disbursal_date, first_capitalisation_date, first_payment_date, num_payments, daily_rate, period_payment, interest_method);
 
+    println!("\nAmortisation Schedule:");
+    println!("Month | Payment | Principal | Interest | Remaining Balance");
+    for payment in schedule {
+        print_row(payment.month, payment.payment, payment.principal, payment.interest, payment.balance);
+    }
 }
 
 fn get_daily_interest_rate(annual_rate: Decimal, interest_method: InterestMethod) -> Decimal {
@@ -125,7 +142,8 @@ fn get_daily_interest_rate(annual_rate: Decimal, interest_method: InterestMethod
     daily_rate
 }
 
-fn build_schedule(principal: Decimal, disbursal_date: NaiveDate, first_capitalisation_date: NaiveDate, first_payment_date: NaiveDate, num_payments: u32, daily_rate: Decimal, period_payment: Decimal, interest_method: InterestMethod) -> Decimal {
+fn build_schedule(principal: Decimal, disbursal_date: NaiveDate, first_capitalisation_date: NaiveDate, first_payment_date: NaiveDate, num_payments: u32, daily_rate: Decimal, period_payment: Decimal, interest_method: InterestMethod) -> Vec<Payment> {
+    let mut schedule = Vec::new();
     let mut balance = principal;
     let mut interest_payable_from = disbursal_date;
     let mut next_cap_date = first_capitalisation_date;
@@ -136,7 +154,13 @@ fn build_schedule(principal: Decimal, disbursal_date: NaiveDate, first_capitalis
         let principal_payment = round_decimal(period_payment - interest, None, None, None);
         balance = round_decimal(balance-principal_payment, None, None, None);
     
-        print_row(month, period_payment, principal_payment, interest, balance);
+        schedule.push(Payment {
+            month,
+            payment: period_payment,
+            principal: principal_payment,
+            interest,
+            balance,
+        });
     
         interest_payable_from = next_cap_date + Days::new(1);
         next_cap_date = next_cap_date + Months::new(1);
@@ -147,7 +171,7 @@ fn build_schedule(principal: Decimal, disbursal_date: NaiveDate, first_capitalis
         }
     }
 
-    balance
+    schedule
 }
 
 
