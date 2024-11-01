@@ -1,4 +1,4 @@
-use rust_decimal::Decimal;
+use clap::{Arg, Command};
 use rust_decimal::prelude::*;
 use std::str::FromStr;
 use chrono::{NaiveDate, Months, Days};
@@ -19,19 +19,68 @@ enum InterestMethod {
 }
 
 fn main() {
-    println!("Loan Amortisation Schedule Calculator");
+    let matches = Command::new("Loan Amortisation Schedule Calculator")
+        .version("1.0")
+        .author("Author Name <author@example.com>")
+        .about("Calculates loan amortisation schedules")
+        .arg(Arg::new("principal")
+            .short('p')
+            .long("principal")
+            .value_name("PRINCIPAL")
+            .help("Sets the principal amount")
+            .required(true))
+        .arg(Arg::new("annual_rate")
+            .short('r')
+            .long("rate")
+            .value_name("ANNUAL_RATE")
+            .help("Sets the annual interest rate")
+            .required(true))
+        .arg(Arg::new("num_payments")
+            .short('n')
+            .long("num_payments")
+            .value_name("NUM_PAYMENTS")
+            .help("Sets the number of payments")
+            .required(true))
+        .arg(Arg::new("disbursal_date")
+            .short('d')
+            .long("disbursal_date")
+            .value_name("DISBURSAL_DATE")
+            .help("Sets the disbursal date (YYYY-MM-DD)")
+            .required(true))
+        .arg(Arg::new("first_payment_date")
+            .short('f')
+            .long("first_payment_date")
+            .value_name("FIRST_PAYMENT_DATE")
+            .help("Sets the first payment date (YYYY-MM-DD)")
+            .required(true))
+        .arg(Arg::new("first_capitalisation_date")
+            .short('c')
+            .long("first_capitalisation_date")
+            .value_name("FIRST_CAPITALISATION_DATE")
+            .help("Sets the first capitalisation date (YYYY-MM-DD)")
+            .required(true))
+        .arg(Arg::new("interest_method")
+            .short('i')
+            .long("interest_method")
+            .value_name("INTEREST_METHOD")
+            .help("Sets the interest method (Convention30_360, Actual365, Actual360, ActualActual)")
+            .required(true))
+        .get_matches();
 
-    // Get loan details from user
-    // let principal = get_input("Enter loan amount: ");
-    // let annual_rate = get_input("Enter annual interest rate (as a percentage): ") / 100.0;
-    // let years = get_input("Enter loan term in years: ");
-    let principal = Decimal::from(15000);
-    let annual_rate = Decimal::from_str("8.9").unwrap() / Decimal::from(100);
-    let num_payments = 36;
-    let disbursal_date = NaiveDate::from_ymd_opt(2024, 11, 1).unwrap();
-    let first_payment_date = NaiveDate::from_ymd_opt(2024, 12, 1).unwrap();
-    let first_capitalisation_date = NaiveDate::from_ymd_opt(2024, 12, 1).unwrap();
-    let interest_method = DEFAULT_INTEREST_METHOD;
+    let principal = Decimal::from_str(matches.get_one::<String>("principal").unwrap()).unwrap();
+    let annual_rate = Decimal::from_str(matches.get_one::<String>("annual_rate").unwrap()).unwrap() / Decimal::from(100);
+    let num_payments = matches.get_one::<String>("num_payments").unwrap().parse::<u32>().unwrap();
+    let disbursal_date = NaiveDate::parse_from_str(matches.get_one::<String>("disbursal_date").unwrap(), "%Y-%m-%d").unwrap();
+    let first_payment_date = NaiveDate::parse_from_str(matches.get_one::<String>("first_payment_date").unwrap(), "%Y-%m-%d").unwrap();
+    let first_capitalisation_date = NaiveDate::parse_from_str(matches.get_one::<String>("first_capitalisation_date").unwrap(), "%Y-%m-%d").unwrap();
+    let interest_method = match matches.get_one::<String>("interest_method").unwrap().as_str() {
+        "Convention30_360" => InterestMethod::Convention30_360,
+        "Actual365" => InterestMethod::Actual365,
+        "Actual360" => InterestMethod::Actual360,
+        "ActualActual" => InterestMethod::ActualActual,
+        _ => DEFAULT_INTEREST_METHOD,
+    };
+
 
     // Convert basis points to period rate, scaled
     let period_rate = annual_rate / Decimal::from(PERIODS_PER_YEAR);
@@ -76,7 +125,7 @@ fn get_daily_interest_rate(annual_rate: Decimal, interest_method: InterestMethod
     daily_rate
 }
 
-fn build_schedule(principal: Decimal, disbursal_date: NaiveDate, first_capitalisation_date: NaiveDate, first_payment_date: NaiveDate, num_payments: i32, daily_rate: Decimal, period_payment: Decimal, interest_method: InterestMethod) -> Decimal {
+fn build_schedule(principal: Decimal, disbursal_date: NaiveDate, first_capitalisation_date: NaiveDate, first_payment_date: NaiveDate, num_payments: u32, daily_rate: Decimal, period_payment: Decimal, interest_method: InterestMethod) -> Decimal {
     let mut balance = principal;
     let mut interest_payable_from = disbursal_date;
     let mut next_cap_date = first_capitalisation_date;
@@ -132,7 +181,7 @@ fn calculate_period_interest(start_date: NaiveDate, to_date: NaiveDate, payment_
     interest
 }
 
-fn calculate_rough_period_payment(principal: Decimal, period_rate: Decimal, num_payments: i32) -> Decimal {
+fn calculate_rough_period_payment(principal: Decimal, period_rate: Decimal, num_payments: u32) -> Decimal {
     let one = Decimal::from(1);
     let factor = (one + period_rate).powd(Decimal::from(num_payments));
     round_decimal((principal * period_rate * factor) / (factor - one), None, None, None)
@@ -145,7 +194,7 @@ fn round_decimal(value: Decimal, precision: Option<u32>, scale: Option<u32>, rou
     value.round_dp_with_strategy(scale.min(precision), rounding)
 }
 
-fn print_row(month: i32, payment: Decimal, principal: Decimal, interest: Decimal, balance: Decimal) {
+fn print_row(month: u32, payment: Decimal, principal: Decimal, interest: Decimal, balance: Decimal) {
     println!("{:5} | {:7.2} | {:9.2} | {:8.2} | {:17.2}", 
              month, payment, principal, interest, balance);
 }
