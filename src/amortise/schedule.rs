@@ -82,12 +82,11 @@ mod tests {
         let annual_rate = Decimal::from_str("8.9").unwrap() / Decimal::from(100);
 
         let num_payments = 36;
-        let period_payment = Decimal::from_str("474.5").unwrap();
+        let period_payment = Decimal::from_str("476.3").unwrap();
 
         let disbursal_date = NaiveDate::from_ymd_opt(2023, 1, 10).unwrap();
         let first_capitalisation_date = NaiveDate::from_ymd_opt(2023, 2, 1).unwrap();
         let first_payment_date = NaiveDate::from_ymd_opt(2023, 3, 1).unwrap();
-        let daily_rate = get_daily_interest_rate(annual_rate, InterestMethod::ActualActual);
 
         let schedule = build_schedule(
             principal,
@@ -95,7 +94,7 @@ mod tests {
             first_capitalisation_date,
             first_payment_date,
             num_payments,
-            daily_rate,
+            annual_rate,
             period_payment,
             InterestMethod::ActualActual,
             true,
