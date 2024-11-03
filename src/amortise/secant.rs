@@ -1,6 +1,5 @@
 use rust_decimal::Decimal;
 
-
 pub fn secant_method<F>(
     f: F,
     x0: Decimal,
@@ -44,4 +43,51 @@ where
 
     // If we've reached here, the method didn't converge
     None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rust_decimal_macros::dec;
+
+    #[test]
+    fn test_secant_method_converges() {
+        let f = |x: Decimal| x * x - dec!(2);
+        let root = secant_method(f, dec!(1), dec!(2), dec!(0.0001), 100);
+        assert!(root.is_some());
+        let root = root.unwrap();
+        assert!((root - dec!(1.4142)).abs() < dec!(0.0001));
+    }
+
+    #[test]
+    fn test_secant_method_no_convergence() {
+        let f = |x: Decimal| x * x + dec!(1);
+        let root = secant_method(f, dec!(1), dec!(0), dec!(0.0001), 100);
+        assert!(root.is_none());
+    }
+
+    #[test]
+    fn test_secant_method_zero_derivative() {
+        let f = |x: Decimal| x * x;
+        let root = secant_method(f, dec!(1), dec!(1), dec!(0.0001), 100);
+        assert!(root.is_none());
+    }
+
+    #[test]
+    fn test_secant_method_linear_function() {
+        let f = |x: Decimal| x - dec!(5);
+        let root = secant_method(f, dec!(0), dec!(10), dec!(0.0001), 100);
+        assert!(root.is_some());
+        let root = root.unwrap();
+        assert!((root - dec!(5)).abs() < dec!(0.0001));
+    }
+
+    #[test]
+    fn test_secant_method_high_precision() {
+        let f = |x: Decimal| x * x - dec!(2);
+        let root = secant_method(f, dec!(1), dec!(2), dec!(0.00000001), 1000);
+        assert!(root.is_some());
+        let root = root.unwrap();
+        assert!((root - dec!(1.41421356)).abs() < dec!(0.00000001));
+    }
 }

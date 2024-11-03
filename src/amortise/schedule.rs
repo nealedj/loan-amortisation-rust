@@ -105,8 +105,6 @@ mod tests {
         assert_eq!(schedule.last().unwrap().balance, Decimal::from(0));
     }
 
-
-
     #[test]
     fn test_get_daily_interest_rate() {
         let annual_rate = Decimal::from_f64(8.9).unwrap() / Decimal::from(100);
