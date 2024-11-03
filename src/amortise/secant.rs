@@ -24,6 +24,10 @@ where
             return Some(x1);
         }
 
+        // Avoid division by zero
+        if f1 == f0 {
+            return None;
+        }
         // Calculate the next x value
         let x2 = x1 - f1 * (x1 - x0) / (f1 - f0);
 
