@@ -1,5 +1,11 @@
+use super::utils::round_decimal;
 use chrono::{Days, NaiveDate};
+use rust_decimal::prelude::RoundingStrategy;
 use rust_decimal::Decimal;
+
+const INTEREST_SCALE: u32 = 2;
+const INTEREST_PRECISION: u32 = 28;
+const INTEREST_ROUNDING: RoundingStrategy = RoundingStrategy::MidpointNearestEven;
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum InterestMethod {
@@ -64,5 +70,10 @@ pub fn calculate_period_interest(
         current_date = current_date + Days::new(1)
     }
 
-    interest
+    round_decimal(
+        interest,
+        Some(INTEREST_PRECISION),
+        Some(INTEREST_SCALE),
+        Some(INTEREST_ROUNDING),
+    )
 }
