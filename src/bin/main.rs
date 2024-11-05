@@ -4,10 +4,8 @@ use rust_decimal::prelude::*;
 use std::str::FromStr;
 use serde_json::json;
 
-mod amortise;
-use crate::amortise::{InterestMethod, Payment, amortise};
+use loan_amortisation_rust::amortise::{InterestMethod, Payment, amortise};
 
-const DEFAULT_INTEREST_METHOD: InterestMethod = InterestMethod::ActualActual;
 
 fn main() {
     let matches = parse_arguments();
@@ -37,17 +35,13 @@ fn main() {
         "%Y-%m-%d",
     )
     .unwrap();
-    let interest_method = match matches
-        .get_one::<String>("interest_method")
-        .unwrap()
-        .as_str()
-    {
-        "Convention30_360" => InterestMethod::Convention30_360,
-        "Actual365" => InterestMethod::Actual365,
-        "Actual360" => InterestMethod::Actual360,
-        "ActualActual" => InterestMethod::ActualActual,
-        _ => DEFAULT_INTEREST_METHOD,
-    };
+
+    let interest_method = InterestMethod::from_str(
+        matches
+            .get_one::<String>("interest_method")
+            .unwrap()
+            .as_str(),
+    ).unwrap();
 
     let output_format = matches
         .get_one::<String>("output_format")
@@ -116,6 +110,7 @@ fn parse_arguments() -> clap::ArgMatches {
         .arg(Arg::new("interest_method")
             .short('i')
             .long("interest_method")
+            .default_value("ACTUALACTUAL")
             .value_name("INTEREST_METHOD")
             .help("Sets the interest method (Convention30_360, Actual365, Actual360, ActualActual)")
             .required(true))

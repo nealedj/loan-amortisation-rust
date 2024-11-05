@@ -1,10 +1,12 @@
 use super::interest::{calculate_period_interest, get_daily_interest_rate, InterestMethod};
 use super::utils::round_decimal;
 use chrono::{Days, Months, NaiveDate};
+
+use serde::Serialize;
 use rust_decimal::prelude::*;
 use rust_decimal::Decimal;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Payment {
     pub month: u32,
     pub payment: Decimal,

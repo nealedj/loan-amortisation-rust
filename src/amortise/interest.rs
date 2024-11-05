@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use super::utils::round_decimal;
 use chrono::{Days, NaiveDate};
 use rust_decimal::prelude::RoundingStrategy;
@@ -7,12 +9,26 @@ const INTEREST_SCALE: u32 = 2;
 const INTEREST_PRECISION: u32 = 28;
 const INTEREST_ROUNDING: RoundingStrategy = RoundingStrategy::MidpointNearestEven;
 
-#[derive(PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum InterestMethod {
     Convention30_360,
     Actual365,
     Actual360,
     ActualActual,
+}
+
+impl FromStr for InterestMethod {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Convention30_360" => Ok(InterestMethod::Convention30_360),
+            "Actual365" => Ok(InterestMethod::Actual365),
+            "Actual360" => Ok(InterestMethod::Actual360),
+            "ActualActual" => Ok(InterestMethod::ActualActual),
+            _ => Err(()),
+        }
+    }
 }
 
 pub fn get_daily_interest_rate(annual_rate: Decimal, interest_method: InterestMethod) -> Decimal {
