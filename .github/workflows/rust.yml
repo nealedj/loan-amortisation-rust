@@ -40,6 +40,9 @@ jobs:
     - name: Build WASM
       run: wasm-pack build --target web --out-dir ./dist
 
+    - name: Copy static files
+      run: cp -r static/* ./dist
+
     - name: List dist contents
       run: ls -la ./dist
 
@@ -49,4 +52,3 @@ jobs:
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./dist
-        debug: true
