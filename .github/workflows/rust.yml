@@ -53,7 +53,7 @@ jobs:
 
     - name: Deploy
       run: |
-        git checkout gh-pages
+        git checkout --orphan gh-pages
         git rm -rf .
         mv dist/* .
         rm -rf dist
