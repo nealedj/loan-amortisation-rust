@@ -61,29 +61,31 @@ pub fn calculate_period_interest(
     payment_amount: Decimal,
     interest_method: InterestMethod,
 ) -> Decimal {
+    let mut interest: Decimal;
+
     if interest_method == InterestMethod::Convention30_360 {
-        return Decimal::from(30) * balance * daily_rate;
-    }
+        interest = Decimal::from(30) * balance * daily_rate;
+    } else {
+        interest = Decimal::from(0);
+        let mut current_date = start_date;
 
-    let mut current_date = start_date;
-    let mut interest = Decimal::from(0);
+        let mut balance_m = balance;
+        let mut daily_rate_m = daily_rate;
+        while current_date <= to_date {
+            if interest_method == InterestMethod::ActualActual && current_date.leap_year() {
+                // Adjust daily rate for leap year
+                daily_rate_m *= Decimal::from(365) / Decimal::from(366);
+            }
 
-    let mut balance_m = balance;
-    let mut daily_rate_m = daily_rate;
-    while current_date <= to_date {
-        if interest_method == InterestMethod::ActualActual && current_date.leap_year() {
-            // Adjust daily rate for leap year
-            daily_rate_m *= Decimal::from(365) / Decimal::from(366);
+            // Reduce balance on payment date
+            if current_date == payment_date {
+                balance_m -= payment_amount;
+            }
+
+            interest += balance_m * daily_rate_m;
+
+            current_date = current_date + Days::new(1)
         }
-
-        // Reduce balance on payment date
-        if current_date == payment_date {
-            balance_m -= payment_amount;
-        }
-
-        interest += balance_m * daily_rate_m;
-
-        current_date = current_date + Days::new(1)
     }
 
     round_decimal(
