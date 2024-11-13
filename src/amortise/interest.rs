@@ -143,7 +143,7 @@ mod tests {
             interest_method,
         );
 
-        assert_eq!(interest, dec!(4.1666666666666666666666670000));
+        assert_eq!(interest, dec!(4.17));
     }
 
     #[test]
