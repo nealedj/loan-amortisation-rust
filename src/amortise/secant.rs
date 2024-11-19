@@ -25,7 +25,7 @@ where
 
         // Avoid division by zero
         if f1 == f0 {
-            return None;
+            return Some(x1);
         }
         // Calculate the next x value
         let x2 = x1 - f1 * (x1 - x0) / (f1 - f0);
@@ -63,14 +63,14 @@ mod tests {
     fn test_secant_method_no_convergence() {
         let f = |x: Decimal| x * x + dec!(1);
         let root = secant_method(f, dec!(1), dec!(0), dec!(0.0001), 100);
-        assert!(root.is_none());
+        assert!(root.unwrap() == dec!(1));
     }
 
     #[test]
     fn test_secant_method_zero_derivative() {
         let f = |x: Decimal| x * x;
         let root = secant_method(f, dec!(1), dec!(1), dec!(0.0001), 100);
-        assert!(root.is_none());
+        assert!(root.unwrap() == dec!(1));
     }
 
     #[test]

@@ -14,6 +14,7 @@ use secant::secant_method;
 use utils::round_decimal;
 
 const PERIODS_PER_YEAR: u32 = 12;
+const ESTIMATE_WINDOW: f32 = 2.5;
 
 pub fn amortise(
     principal: Decimal,
@@ -27,6 +28,7 @@ pub fn amortise(
     let mut period_payment = calculate_rough_period_payment(principal, annual_rate, num_payments);
 
     let f = |period_payment| {
+        println!("Trying period payment: {}", period_payment);
         let schedule = build_schedule(
             principal,
             disbursal_date,
@@ -41,18 +43,23 @@ pub fn amortise(
         schedule.last().unwrap().balance // final balance
     };
 
-    match secant_method(
+    let estimate_window = Decimal::from_f32(ESTIMATE_WINDOW).unwrap();
+    period_payment = match secant_method(
         f,
-        period_payment,
-        period_payment * Decimal::new(1, 2),
-        Decimal::new(1, 6),
-        100,
+        period_payment / estimate_window,
+        period_payment * estimate_window,
+        Decimal::new(1, 2),
+        4,
     ) {
-        Some(root) => period_payment = root,
-        None => println!("Failed to converge"),
-    }
+        Some(root) => root,
+        None => {
+            println!("Failed to converge");
+            return vec![];
+        }
+    };
 
     period_payment = round_decimal(period_payment, None, None, None);
+
     let schedule = build_schedule(
         principal,
         disbursal_date,

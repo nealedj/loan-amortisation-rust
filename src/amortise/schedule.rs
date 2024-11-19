@@ -2,9 +2,8 @@ use super::interest::{calculate_period_interest, get_daily_interest_rate, Intere
 use super::utils::round_decimal;
 use chrono::{Days, Months, NaiveDate};
 
-use serde::Serialize;
-use rust_decimal::prelude::*;
 use rust_decimal::Decimal;
+use serde::Serialize;
 
 #[derive(Debug, Serialize)]
 pub struct Payment {
@@ -45,18 +44,21 @@ pub fn build_schedule(
             interest_method,
         );
         let principal_payment;
+        let payment;
 
         if settle_balance && month == num_payments {
-            principal_payment = balance;
+            payment = balance + interest;
         } else {
-            principal_payment = round_decimal(period_payment - interest, None, None, None);
+            payment = period_payment;
         }
+
+        principal_payment = round_decimal(payment - interest, None, None, None);
 
         balance = round_decimal(balance - principal_payment, None, None, None);
 
         schedule.push(Payment {
             month,
-            payment: period_payment,
+            payment: payment,
             principal: principal_payment,
             interest,
             balance,
@@ -65,10 +67,6 @@ pub fn build_schedule(
         interest_payable_from = next_cap_date + Days::new(1);
         next_cap_date = next_cap_date + Months::new(1);
         next_payment_date = next_payment_date + Months::new(1);
-
-        if balance < Decimal::from_str("0.01").unwrap() {
-            break;
-        }
     }
 
     schedule
@@ -77,6 +75,7 @@ pub fn build_schedule(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::str::FromStr;
 
     #[test]
     fn test_build_schedule() {
@@ -108,7 +107,7 @@ mod tests {
 
     #[test]
     fn test_get_daily_interest_rate() {
-        let annual_rate = Decimal::from_f64(8.9).unwrap() / Decimal::from(100);
+        let annual_rate = Decimal::new(89, 1) / Decimal::from(100);
         let interest_method = InterestMethod::ActualActual;
 
         let daily_rate = get_daily_interest_rate(annual_rate, interest_method);
