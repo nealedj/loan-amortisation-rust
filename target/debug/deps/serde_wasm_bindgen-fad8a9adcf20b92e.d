@@ -1,0 +1,10 @@
+/home/runner/work/loan-amortisation-rust/loan-amortisation-rust/target/debug/deps/libserde_wasm_bindgen-fad8a9adcf20b92e.rmeta: /home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/serde-wasm-bindgen-0.2.0/src/lib.rs /home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/serde-wasm-bindgen-0.2.0/src/de.rs /home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/serde-wasm-bindgen-0.2.0/src/error.rs /home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/serde-wasm-bindgen-0.2.0/src/ser.rs
+
+/home/runner/work/loan-amortisation-rust/loan-amortisation-rust/target/debug/deps/libserde_wasm_bindgen-fad8a9adcf20b92e.rlib: /home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/serde-wasm-bindgen-0.2.0/src/lib.rs /home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/serde-wasm-bindgen-0.2.0/src/de.rs /home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/serde-wasm-bindgen-0.2.0/src/error.rs /home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/serde-wasm-bindgen-0.2.0/src/ser.rs
+
+/home/runner/work/loan-amortisation-rust/loan-amortisation-rust/target/debug/deps/serde_wasm_bindgen-fad8a9adcf20b92e.d: /home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/serde-wasm-bindgen-0.2.0/src/lib.rs /home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/serde-wasm-bindgen-0.2.0/src/de.rs /home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/serde-wasm-bindgen-0.2.0/src/error.rs /home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/serde-wasm-bindgen-0.2.0/src/ser.rs
+
+/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/serde-wasm-bindgen-0.2.0/src/lib.rs:
+/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/serde-wasm-bindgen-0.2.0/src/de.rs:
+/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/serde-wasm-bindgen-0.2.0/src/error.rs:
+/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/serde-wasm-bindgen-0.2.0/src/ser.rs:

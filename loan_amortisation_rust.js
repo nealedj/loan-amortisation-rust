@@ -1,0 +1,1 @@
+../pkg/loan_amortisation_rust.js

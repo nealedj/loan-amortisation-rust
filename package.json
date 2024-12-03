@@ -1,0 +1,15 @@
+{
+  "name": "loan-amortisation-rust",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "loan_amortisation_rust_bg.wasm",
+    "loan_amortisation_rust.js",
+    "loan_amortisation_rust.d.ts"
+  ],
+  "main": "loan_amortisation_rust.js",
+  "types": "loan_amortisation_rust.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
