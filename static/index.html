@@ -10,11 +10,17 @@
     .is-narrow input {
       width: 100px;
     }
+
+    canvas {
+      width: 100%;
+      max-height: 900px;
+      margin: auto;
+    }
   </style>
 </head>
 
 <body>
-  <section class="section is-medium">
+  <section class="section pb-4">
     <h1 class="title">Loan Amortisation WASM Test Bed</h1>
     <div class="container">
       <form>
@@ -25,7 +31,8 @@
               <input class="input is-small" type="number" id="principal" placeholder="Principal" value="15000">
             </div>
             <div class="column">
-              <input class="input is-small" type="range" min="0" max="100000" step="1000" value="15000" id="principal_slider">
+              <input class="input is-small" type="range" min="1" max="100000" step="1000" value="15000"
+                id="principal_slider">
             </div>
           </div>
         </div>
@@ -33,10 +40,12 @@
           <label class="label is-small">Annual Rate %</label>
           <div class="control columns is-mobile">
             <div class="column is-narrow">
-              <input class="input is-small" type="number" step=".01" id="annual_rate" placeholder="Annual Rate" value="5">
+              <input class="input is-small" type="number" step=".01" id="annual_rate" placeholder="Annual Rate"
+                value="5">
             </div>
             <div class="column">
-              <input class="input is-small" type="range" min="0" max="100" step=".01" value="5" id="annual_rate_slider">
+              <input class="input is-small" type="range" min=".01" max="100" step=".01" value="5"
+                id="annual_rate_slider">
             </div>
           </div>
         </div>
@@ -47,7 +56,8 @@
               <input class="input is-small" type="number" id="num_payments" placeholder="Number of Payments" value="24">
             </div>
             <div class="column">
-              <input class="input is-small" type="range" min="0" max="1200" step="1" value="24" id="num_payments_slider">
+              <input class="input is-small" type="range" min="1" max="1200" step="1" value="24"
+                id="num_payments_slider">
             </div>
           </div>
         </div>
@@ -55,7 +65,8 @@
           <div class="field column">
             <label class="label is-small">Disbursal Date</label>
             <div class="control">
-              <input class="input is-small" type="date" id="disbursal_date" placeholder="Disbursal Date" value="2024-01-20">
+              <input class="input is-small" type="date" id="disbursal_date" placeholder="Disbursal Date"
+                value="2024-01-20">
             </div>
           </div>
           <div class="field column">
@@ -68,8 +79,8 @@
           <div class="field column">
             <label class="label is-small">First Capitalisation Date</label>
             <div class="control">
-              <input class="input is-small" type="date" id="first_capitalisation_date" placeholder="First Capitalisation Date"
-                value="2024-03-01">
+              <input class="input is-small" type="date" id="first_capitalisation_date"
+                placeholder="First Capitalisation Date" value="2024-03-01">
             </div>
           </div>
         </div>
@@ -110,25 +121,35 @@
     </div>
   </section>
 
-  <section class="section">
-    <div class="container">
-      <h2 class="title">Amortisation Schedule</h2>
-      <table id="schedule" class="table is-striped is-bordered is-hoverable is-fullwidth">
-        <thead>
-          <tr>
-            <th>Month</th>
-            <th>Payment</th>
-            <th>Interest</th>
-            <th>Principal</th>
-            <th>Balance</th>
-          </tr>
-        </thead>
-        <tbody>
+  <section class="section pt-4">
+    <h2 class="title">Amortisation Schedule</h2>
 
-        </tbody>
-      </table>
+    <div class="container">
+      <div class="columns is-tablet">
+        <div class="column is-half-tablet is-two-thirds-desktop">
+          <canvas id="loanChart"></canvas>
+        </div>
+        <div class="column is-narrow">
+          <table id="schedule" class="table is-striped is-bordered is-hoverable is-fullwidth">
+            <thead>
+              <tr>
+                <th>Month</th>
+                <th>Payment</th>
+                <th>Interest</th>
+                <th>Principal</th>
+                <th>Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </section>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="./index.js"></script>
 
   <script type="module">

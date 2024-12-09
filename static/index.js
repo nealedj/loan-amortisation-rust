@@ -1,4 +1,100 @@
 function setup(init, amortise_wasm) {
+  const ctx = document.getElementById('loanChart').getContext('2d');
+  let chart;
+  function renderChart(data) {
+    if (chart) {
+      chart.destroy();
+    }
+    chart = new Chart(ctx, {
+      data: {
+        labels: data.map(element => element.month),
+        datasets: [{
+          type: 'line',
+          label: 'Balance',
+          data: data.map(element => element.balance),
+          borderColor: 'rgba(75, 192, 192, 1)',
+          borderWidth: 8,
+          yAxisID: 'yBalance',
+          pointRadius: 0
+        },
+        {
+          type: 'bar',
+          label: 'Interest',
+          data: data.map(element => element.interest),
+          borderColor: 'rgba(255, 99, 132, 1)',
+          borderWidth: 1,
+          backgroundColor: 'rgba(255, 99, 132, 0.6)',
+          fill: true,
+          yAxisID: 'yPayment',
+          stack: 'combined'
+        },
+        {
+          type: 'bar',
+          label: 'Principal',
+          data: data.map(element => element.principal),
+          borderColor: 'rgba(54, 162, 235, 1)',
+          borderWidth: 1,
+          backgroundColor: 'rgba(54, 162, 235, 0.6)',
+          fill: true,
+          yAxisID: 'yPayment',
+          pointRadius: 0,
+          stack: 'combined'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          yBalance: {
+            beginAtZero: true,
+            grid: {
+              color: 'rgba(200, 200, 200, 0.5)',
+              lineWidth: 1,
+              drawBorder: false
+            },
+            title: {
+              display: true,
+              text: 'Balance',
+              fontSize: 14,
+              padding: { top: 10 }
+            }
+          },
+          yPayment: {
+            stacked: true,
+            grid: {
+              color: 'rgba(200, 200, 200, 0.5)',
+              lineWidth: 1,
+              drawBorder: false
+            },
+            title: {
+              display: true,
+              text: 'Payments',
+              fontSize: 14,
+              padding: { top: 10 }
+            }
+          }
+        },
+        plugins: {
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            titleColor: '#fff',
+            bodyColor: '#fff',
+          },
+          legend: {
+            position: 'top',
+            labels: {
+              boxWidth: 20,
+              padding: 15,
+              fontSize: 12,
+              fontColor: '#333'
+            }
+          }
+        }
+      }
+    });
+  }
 
   async function calculate() {
     await init();
@@ -42,6 +138,8 @@ function setup(init, amortise_wasm) {
       row.appendChild(balance);
       document.querySelector('table tbody').appendChild(row);
     });
+
+    renderChart(schedule);
   }
 
   (function setupSliders() {
