@@ -41,7 +41,7 @@ jobs:
       run: wasm-pack build --target web --out-dir ./dist
 
     - name: Copy static files
-      run: cp -r static/* ./dist
+      run: cp -r static/*.html ./dist && cp -r static/*.js ./dist
 
     - name: List dist contents
       run: ls -la ./dist
