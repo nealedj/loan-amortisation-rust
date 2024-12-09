@@ -15,6 +15,7 @@
       width: 100%;
       max-height: 900px;
       margin: auto;
+      display: block;
     }
   </style>
 </head>
@@ -28,10 +29,10 @@
           <label class="label is-small">Principal</label>
           <div class="control columns is-mobile">
             <div class="column is-narrow">
-              <input class="input is-small" type="number" id="principal" placeholder="Principal" value="15000">
+              <input class="input" type="number" id="principal" placeholder="Principal" value="15000">
             </div>
             <div class="column">
-              <input class="input is-small" type="range" min="1" max="100000" step="1000" value="15000"
+              <input class="input" type="range" min="1" max="100000" step="1000" value="15000"
                 id="principal_slider">
             </div>
           </div>
@@ -40,11 +41,11 @@
           <label class="label is-small">Annual Rate %</label>
           <div class="control columns is-mobile">
             <div class="column is-narrow">
-              <input class="input is-small" type="number" step=".01" id="annual_rate" placeholder="Annual Rate"
+              <input class="input" type="number" step=".01" id="annual_rate" placeholder="Annual Rate"
                 value="5">
             </div>
             <div class="column">
-              <input class="input is-small" type="range" min=".01" max="100" step=".01" value="5"
+              <input class="input" type="range" min=".01" max="100" step=".01" value="5"
                 id="annual_rate_slider">
             </div>
           </div>
@@ -53,10 +54,10 @@
           <label class="label is-small">Number of Payments</label>
           <div class="control columns is-mobile">
             <div class="column is-narrow">
-              <input class="input is-small" type="number" id="num_payments" placeholder="Number of Payments" value="24">
+              <input class="input" type="number" id="num_payments" placeholder="Number of Payments" value="24">
             </div>
             <div class="column">
-              <input class="input is-small" type="range" min="1" max="1200" step="1" value="24"
+              <input class="input" type="range" min="1" max="1200" step="1" value="24"
                 id="num_payments_slider">
             </div>
           </div>
@@ -65,21 +66,21 @@
           <div class="field column">
             <label class="label is-small">Disbursal Date</label>
             <div class="control">
-              <input class="input is-small" type="date" id="disbursal_date" placeholder="Disbursal Date"
+              <input class="input" type="date" id="disbursal_date" placeholder="Disbursal Date"
                 value="2024-01-20">
             </div>
           </div>
           <div class="field column">
             <label class="label is-small">First Payment Date</label>
             <div class="control">
-              <input class="input is-small" type="date" id="first_payment_date" placeholder="First Payment Date"
+              <input class="input" type="date" id="first_payment_date" placeholder="First Payment Date"
                 value="2024-02-01">
             </div>
           </div>
           <div class="field column">
             <label class="label is-small">First Capitalisation Date</label>
             <div class="control">
-              <input class="input is-small" type="date" id="first_capitalisation_date"
+              <input class="input" type="date" id="first_capitalisation_date"
                 placeholder="First Capitalisation Date" value="2024-03-01">
             </div>
           </div>
@@ -88,7 +89,7 @@
           <div class="field column is-narrow">
             <label class="label is-small">Interest Method</label>
             <div class="control">
-              <div class="select is-small">
+              <div class="select">
                 <select id="interest_method">
                   <option value="Convention30_360">Convention30_360</option>
                   <option value="ActualActual" selected>ActualActual</option>
@@ -125,11 +126,11 @@
     <h2 class="title">Amortisation Schedule</h2>
 
     <div class="container">
-      <div class="columns is-tablet">
-        <div class="column is-half-tablet is-two-thirds-desktop">
+      <div class="columns is-desktop">
+        <div class="column">
           <canvas id="loanChart"></canvas>
         </div>
-        <div class="column is-narrow">
+        <div class="column">
           <table id="schedule" class="table is-striped is-bordered is-hoverable is-fullwidth">
             <thead>
               <tr>
