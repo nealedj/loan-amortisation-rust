@@ -13,9 +13,11 @@ function setup(init, amortise_wasm) {
           label: 'Balance',
           data: data.map(element => element.balance),
           borderColor: 'rgba(75, 192, 192, 1)',
-          borderWidth: 8,
+          borderWidth: 6,
           yAxisID: 'yBalance',
-          pointRadius: 0
+          pointRadius: 0,
+          borderCapStyle: 'round',
+          tension: 0.4
         },
         {
           type: 'bar',
@@ -60,6 +62,7 @@ function setup(init, amortise_wasm) {
             }
           },
           yPayment: {
+            beginAtZero: true,
             stacked: true,
             grid: {
               color: 'rgba(200, 200, 200, 0.5)',
