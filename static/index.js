@@ -153,7 +153,7 @@ function setup(init, amortise_wasm) {
       document.getElementById(element).addEventListener('input', function () {
         document.getElementById(`${element}_slider`).value = this.value;
       });
-      document.getElementById(`${element}_slider`).addEventListener('input', function () {
+      document.getElementById(`${element}_slider`).addEventListener('change', function () {
         document.getElementById(element).value = this.value;
       });
     });
