@@ -1,4 +1,4 @@
-use crate::amortise::{amortise, InterestMethod};
+use crate::amortise::{amortise, InterestMethod, InterestType};
 use chrono::NaiveDate;
 use rust_decimal::{prelude::FromPrimitive, Decimal};
 use serde_wasm_bindgen::to_value;
@@ -14,6 +14,7 @@ pub fn amortise_wasm(
     first_payment_date: String,
     first_capitalisation_date: String,
     interest_method: String,
+    interest_type: String,
 ) -> JsValue {
     let principal = Decimal::from_f64(principal).unwrap();
     let annual_rate = Decimal::from_f64(annual_rate).unwrap() / Decimal::from(100);
@@ -23,6 +24,7 @@ pub fn amortise_wasm(
     let first_capitalisation_date =
         NaiveDate::parse_from_str(&first_capitalisation_date, "%Y-%m-%d").unwrap();
     let interest_method = InterestMethod::from_str(&interest_method).unwrap();
+    let interest_type = InterestType::from_str(&interest_type).unwrap();
 
     let schedule = amortise(
         principal,
@@ -32,6 +34,7 @@ pub fn amortise_wasm(
         first_payment_date,
         first_capitalisation_date,
         interest_method,
+        interest_type,
     );
     to_value(&schedule).unwrap()
 }

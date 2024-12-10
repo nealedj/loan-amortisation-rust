@@ -2,9 +2,7 @@ function setup(init, amortise_wasm) {
   const ctx = document.getElementById('loanChart').getContext('2d');
   let chart;
   function renderChart(data) {
-    if (chart) {
-      chart.destroy();
-    }
+
     chart = new Chart(ctx, {
       data: {
         labels: data.map(element => element.month),
@@ -64,8 +62,10 @@ function setup(init, amortise_wasm) {
           yPayment: {
             beginAtZero: true,
             stacked: true,
+            position: 'right',
             grid: {
               color: 'rgba(200, 200, 200, 0.5)',
+              drawOnChartArea: false,
               lineWidth: 1,
               drawBorder: false
             },
@@ -103,6 +103,11 @@ function setup(init, amortise_wasm) {
     await init();
 
     document.querySelector('table tbody').innerHTML = '';
+    if (chart) {
+      chart.destroy();
+    }
+    updateBoxes(0, 0, 0, 0, 0);
+    document.getElementsByClassName('is-danger')[0].classList.add('is-hidden');
 
     const principal = parseFloat(document.getElementById('principal').value);
     const annual_rate = parseFloat(document.getElementById('annual_rate').value);
@@ -112,14 +117,28 @@ function setup(init, amortise_wasm) {
     const first_capitalisation_date = document.getElementById('first_capitalisation_date').value;
     const interest_method = document.getElementById('interest_method').value;
 
-    const schedule = amortise_wasm(
-      principal,
-      annual_rate,
-      num_payments,
-      disbursal_date,
-      first_payment_date,
-      first_capitalisation_date,
-      interest_method);
+    const interest_type_rd = document.querySelector('input[name="interest_type"]:checked');
+    const interest_type = interest_type_rd ? interest_type_rd.value : null;
+
+    let schedule;
+    try {
+      schedule = amortise_wasm(
+        principal,
+        annual_rate,
+        num_payments,
+        disbursal_date,
+        first_payment_date,
+        first_capitalisation_date,
+        interest_method,
+        interest_type,
+      );
+    }
+    catch(e) {
+      console.log(e);
+      document.getElementsByClassName('is-danger')[0].classList.remove('is-hidden');
+      document.getElementById('error-message').innerHTML = e.message + e.stack.replace(/\n/g, '<br>');
+      return;
+    }
 
     schedule.payments.forEach(element => {
       const row = document.createElement('tr');
@@ -141,11 +160,23 @@ function setup(init, amortise_wasm) {
       document.querySelector('table tbody').appendChild(row);
     });
 
-    document.getElementById('monthly-payment').textContent = schedule.payments[0].payment;
-    document.getElementById('total-payable').textContent = schedule.totals.total_payable;
-    document.getElementById('total-interest').textContent = schedule.totals.total_interest;
+    updateBoxes(
+      schedule.payments[0].payment,
+      schedule.meta.total_payable,
+      schedule.meta.total_interest,
+      parseFloat((schedule.meta.annual_rate * 100).toFixed(6)).toString(),
+      parseFloat((schedule.meta.calculated_apr * 100).toFixed(6)).toString()
+    );
 
     renderChart(schedule.payments);
+  }
+
+  function updateBoxes(monthlyPayment, totalPayable, totalInterest, annualRate, calculatedApr) {
+    document.getElementById('monthly-payment').textContent = monthlyPayment;
+    document.getElementById('total-payable').textContent = totalPayable;
+    document.getElementById('total-interest').textContent = totalInterest;
+    document.getElementById('annual-rate').textContent = annualRate;
+    document.getElementById('calculated-apr').textContent = calculatedApr;
   }
 
   (function setupSliders() {
@@ -170,20 +201,51 @@ function setup(init, amortise_wasm) {
   })();
 
   (function setupInputTriggers() {
-    ['principal',
-      'principal_slider',
-      'annual_rate',
-      'annual_rate_slider',
-      'num_payments',
-      'num_payments_slider',
-      'disbursal_date',
+    let isDragging = false;
+    ['disbursal_date',
       'first_payment_date',
       'first_capitalisation_date',
       'interest_method'].forEach(element => {
-        document.getElementById(element).addEventListener('input', function () {
+        document.getElementById(element).addEventListener('change', function () {
           calculate();
         });
       });
+
+    ['principal',
+      'annual_rate',
+      'num_payments'].forEach(element => {
+        let txtEl = document.getElementById(element);
+        txtEl.addEventListener('change', function () {
+          document.getElementById(`${element}_slider`).value = this.value;
+        });
+        txtEl.addEventListener('blur', function () {
+          calculate();
+        });
+      });
+
+    ['principal_slider',
+      'annual_rate_slider',
+      'num_payments_slider'].forEach(element => {
+        let sliderEl = document.getElementById(element);
+        sliderEl.addEventListener('input', function () {
+          isDragging = true;
+          document.getElementById(element.replace('_slider', '')).value = this.value
+        });
+
+        sliderEl.addEventListener('change', function () {
+          if (isDragging) {
+            isDragging = false;
+            calculate();
+          }
+        });
+
+      });
+
+    document.querySelectorAll('input[name="interest_type"]').forEach(element => {
+      element.addEventListener('change', function () {
+        calculate();
+      });
+    });
   })();
 
   calculate();

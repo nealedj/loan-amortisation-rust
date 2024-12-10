@@ -3,7 +3,7 @@ use std::str::FromStr;
 use super::utils::round_decimal;
 use chrono::{Days, NaiveDate};
 use rust_decimal::prelude::RoundingStrategy;
-use rust_decimal::Decimal;
+use rust_decimal::{Decimal, MathematicalOps};
 
 const INTEREST_SCALE: u32 = 2;
 const INTEREST_PRECISION: u32 = 28;
@@ -26,6 +26,23 @@ impl FromStr for InterestMethod {
             "Actual365" => Ok(InterestMethod::Actual365),
             "Actual360" => Ok(InterestMethod::Actual360),
             "ActualActual" => Ok(InterestMethod::ActualActual),
+            _ => Err(()),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub enum InterestType {
+    Simple,
+    Compound,
+}
+impl FromStr for InterestType {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Simple" => Ok(InterestType::Simple),
+            "Compound" => Ok(InterestType::Compound),
             _ => Err(()),
         }
     }
@@ -60,12 +77,15 @@ pub fn calculate_period_interest(
     balance: Decimal,
     payment_amount: Decimal,
     interest_method: InterestMethod,
-) -> Decimal {
+) -> (Decimal, u32) {
     let mut interest: Decimal;
+    let mut days: u32;
 
     if interest_method == InterestMethod::Convention30_360 {
         interest = Decimal::from(30) * balance * daily_rate;
+        days = 30;
     } else {
+        days = 0;
         interest = Decimal::from(0);
         let mut current_date = start_date;
 
@@ -84,14 +104,29 @@ pub fn calculate_period_interest(
 
             interest += balance_m * daily_rate_m;
 
-            current_date = current_date + Days::new(1)
+            current_date = current_date + Days::new(1);
+            days += 1;
         }
     }
 
-    round_decimal(
+    (round_decimal(
         interest,
         Some(INTEREST_PRECISION),
         Some(INTEREST_SCALE),
+        Some(INTEREST_ROUNDING),
+    ), days)
+}
+
+pub fn decompound_rate(annual_rate: Decimal) -> Decimal {
+    let compounds_per_year = Decimal::from(12);
+    let one = Decimal::ONE;
+
+    let rate = ((one + annual_rate).powd(one / compounds_per_year) - one) * compounds_per_year;
+
+    round_decimal(
+        rate,
+        Some(INTEREST_PRECISION),
+        Some(6),
         Some(INTEREST_ROUNDING),
     )
 }
@@ -124,6 +159,14 @@ mod tests {
     }
 
     #[test]
+    fn test_decompound_rate() {
+        let rate = dec!(0.0512); // 5.12% EAR
+        let decompounded_rate = decompound_rate(rate);
+
+        assert_eq!(decompounded_rate, dec!(0.050036));
+    }
+
+    #[test]
     fn test_calculate_period_interest_convention30_360() {
         let start_date = NaiveDate::from_ymd_opt(2023, 1, 1).expect("Invalid date");
         let to_date = NaiveDate::from_ymd_opt(2023, 1, 30).expect("Invalid date");
@@ -133,7 +176,7 @@ mod tests {
         let payment_amount = dec!(100);
         let interest_method = InterestMethod::Convention30_360;
 
-        let interest = calculate_period_interest(
+        let (interest, days) = calculate_period_interest(
             start_date,
             to_date,
             payment_date,
@@ -144,6 +187,7 @@ mod tests {
         );
 
         assert_eq!(interest, dec!(4.17));
+        assert_eq!(days, 30);
     }
 
     #[test]
@@ -156,7 +200,7 @@ mod tests {
         let payment_amount = dec!(100);
         let interest_method = InterestMethod::Actual365;
 
-        let interest = calculate_period_interest(
+        let (interest, days) = calculate_period_interest(
             start_date,
             to_date,
             payment_date,
@@ -167,6 +211,7 @@ mod tests {
         );
 
         assert_eq!(interest, dec!(3.89));
+        assert_eq!(days, 30);
     }
 
     #[test]
@@ -179,7 +224,7 @@ mod tests {
         let payment_amount = dec!(100);
         let interest_method = InterestMethod::Actual360;
 
-        let interest = calculate_period_interest(
+        let (interest, days) = calculate_period_interest(
             start_date,
             to_date,
             payment_date,
@@ -190,6 +235,8 @@ mod tests {
         );
 
         assert_eq!(interest, dec!(3.94));
+        assert_eq!(days, 30);
+
     }
 
     #[test]
@@ -202,7 +249,7 @@ mod tests {
         let payment_amount = dec!(100);
         let interest_method = InterestMethod::ActualActual;
 
-        let interest = calculate_period_interest(
+        let (interest, days) = calculate_period_interest(
             start_date,
             to_date,
             payment_date,
@@ -213,5 +260,7 @@ mod tests {
         );
 
         assert_eq!(interest, dec!(3.89));
+        assert_eq!(days, 30);
+
     }
 }

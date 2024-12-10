@@ -1,11 +1,10 @@
 use chrono::NaiveDate;
 use clap::{Arg, Command};
 use rust_decimal::prelude::*;
-use std::str::FromStr;
 use serde_json::json;
+use std::str::FromStr;
 
-use loan_amortisation_rust::amortise::{InterestMethod, Payment, amortise};
-
+use loan_amortisation_rust::amortise::{amortise, InterestMethod, InterestType, Payment};
 
 fn main() {
     let matches = parse_arguments();
@@ -41,12 +40,18 @@ fn main() {
             .get_one::<String>("interest_method")
             .unwrap()
             .as_str(),
-    ).unwrap();
+    )
+    .unwrap();
 
-    let output_format = matches
-        .get_one::<String>("output_format")
-        .unwrap()
-        .as_str();
+    let interest_type = InterestType::from_str(
+        matches
+            .get_one::<String>("interest_type")
+            .unwrap()
+            .as_str(),
+    )
+    .unwrap();
+
+    let output_format = matches.get_one::<String>("output_format").unwrap().as_str();
 
     let schedule = amortise(
         principal,
@@ -56,7 +61,8 @@ fn main() {
         first_payment_date,
         first_capitalisation_date,
         interest_method,
-    ); 
+        interest_type,
+    );
     let payments = schedule.payments;
 
     match output_format {
@@ -64,7 +70,6 @@ fn main() {
         "tsv" => print_tsv(&payments),
         _ => print_table(&payments),
     }
-
 }
 
 fn parse_arguments() -> clap::ArgMatches {
@@ -115,6 +120,13 @@ fn parse_arguments() -> clap::ArgMatches {
             .value_name("INTEREST_METHOD")
             .help("Sets the interest method (Convention30_360, Actual365, Actual360, ActualActual)")
             .required(true))
+        .arg(Arg::new("interest_type")
+            .short('t')
+            .long("interest_type")
+            .default_value("Simple")
+            .value_name("INTEREST_TYPE")
+            .help("Sets the interest type (Simple, Compound)")
+            .required(false))
         .arg(Arg::new("output_format")
             .short('o')
             .long("output_format")
@@ -155,15 +167,18 @@ fn print_table(schedule: &[Payment]) {
 }
 
 fn print_json(schedule: &[Payment]) {
-    let json_schedule: Vec<_> = schedule.iter().map(|p| {
-        json!({
-            "month": p.month,
-            "payment": p.payment,
-            "principal": p.principal,
-            "interest": p.interest,
-            "balance": p.balance,
+    let json_schedule: Vec<_> = schedule
+        .iter()
+        .map(|p| {
+            json!({
+                "month": p.month,
+                "payment": p.payment,
+                "principal": p.principal,
+                "interest": p.interest,
+                "balance": p.balance,
+            })
         })
-    }).collect();
+        .collect();
     println!("{}", serde_json::to_string_pretty(&json_schedule).unwrap());
 }
 

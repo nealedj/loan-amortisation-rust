@@ -17,6 +17,10 @@
       margin: auto;
       display: block;
     }
+
+    .is-narrow input[type="radio"] {
+      width: 1em;
+    }
   </style>
 </head>
 
@@ -32,97 +36,110 @@
               <input class="input" type="number" id="principal" placeholder="Principal" value="15000">
             </div>
             <div class="column">
-              <input class="input" type="range" min="1" max="100000" step="1000" value="15000"
-                id="principal_slider">
+              <input class="input" type="range" min="1" max="100000" step="1000" value="15000" id="principal_slider">
             </div>
           </div>
         </div>
         <div class="field">
           <label class="label is-small">Annual Rate %</label>
-          <div class="control columns is-mobile">
+          <div class="control columns is-mobile is-vcentered">
             <div class="column is-narrow">
-              <input class="input" type="number" step=".01" id="annual_rate" placeholder="Annual Rate"
-                value="5">
+              <input class="input" type="number" step=".01" id="annual_rate" placeholder="Annual Rate" value="5">
+            </div>
+            <div class="column is-narrow">
+              <div class="radios">
+                <label class="radio">
+                  <input type="radio" name="interest_type" value="Simple" />
+                  Simple
+                </label>
+                <label class="radio">
+                  <input type="radio" name="interest_type" value="Compound" checked  />
+                  Compound
+                </label>
+              </div>
             </div>
             <div class="column">
-              <input class="input" type="range" min=".01" max="100" step=".01" value="5"
-                id="annual_rate_slider">
+              <input class="input" type="range" min=".01" max="100" step=".01" value="5" id="annual_rate_slider">
             </div>
+
           </div>
-        </div>
-        <div class="field">
-          <label class="label is-small">Number of Payments</label>
-          <div class="control columns is-mobile">
-            <div class="column is-narrow">
-              <input class="input" type="number" id="num_payments" placeholder="Number of Payments" value="24">
-            </div>
-            <div class="column">
-              <input class="input" type="range" min="1" max="1200" step="1" value="24"
-                id="num_payments_slider">
-            </div>
-          </div>
-        </div>
-        <div class="columns">
-          <div class="field column">
-            <label class="label is-small">Disbursal Date</label>
-            <div class="control">
-              <input class="input" type="date" id="disbursal_date" placeholder="Disbursal Date"
-                value="2024-01-20">
-            </div>
-          </div>
-          <div class="field column">
-            <label class="label is-small">First Payment Date</label>
-            <div class="control">
-              <input class="input" type="date" id="first_payment_date" placeholder="First Payment Date"
-                value="2024-02-01">
-            </div>
-          </div>
-          <div class="field column">
-            <label class="label is-small">First Capitalisation Date</label>
-            <div class="control">
-              <input class="input" type="date" id="first_capitalisation_date"
-                placeholder="First Capitalisation Date" value="2024-03-01">
-            </div>
-          </div>
-        </div>
-        <div class="columns">
-          <div class="field column is-narrow">
-            <label class="label is-small">Interest Method</label>
-            <div class="control">
-              <div class="select">
-                <select id="interest_method">
-                  <option value="Convention30_360">Convention30_360</option>
-                  <option value="ActualActual" selected>ActualActual</option>
-                  <option value="Actual360">Actual360</option>
-                  <option value="Actual365">Actual365</option>
-                </select>
+          <div class="field">
+            <label class="label is-small">Number of Payments</label>
+            <div class="control columns is-mobile">
+              <div class="column is-narrow">
+                <input class="input" type="number" id="num_payments" placeholder="Number of Payments" value="24">
+              </div>
+              <div class="column">
+                <input class="input" type="range" min="1" max="1200" step="1" value="24" id="num_payments_slider">
               </div>
             </div>
           </div>
-
-          <div class="column">
-            <div class="interest-explanation notification content is-small">
-              <p class="Convention30_360 is-hidden">The 30/360 convention calculates the daily interest using a 360-day
-                year and then multiplies that by 30 days (standardized month). Interest is only applied to the first 30
-                days of the month. This convention recognizes 3 days' worth of interest on February 28. </p>
-              <p class="ActualActual">The Actual/Actual convention calculates the daily interest using the actual number
-                of days in the year and then multiplies that by the actual number of days in each month. The total
-                interest varies from month to month.</p>
-              <p class="Actual360 is-hidden">The Actual/360 convention calculates the daily interest using a 360-day
-                year and then multiplies that by the actual number of days in each period. The total interest varies
-                from month to month.</p>
-              <p class="Actual365 is-hidden">The Actual/365 convention calculates the daily interest using a 365-day
-                year and then multiplies that by the actual number of days in each period. The total interest varies
-                from month to month.</p>
+          <div class="columns">
+            <div class="field column">
+              <label class="label is-small">Disbursal Date</label>
+              <div class="control">
+                <input class="input" type="date" id="disbursal_date" placeholder="Disbursal Date" value="2024-01-20">
+              </div>
+            </div>
+            <div class="field column">
+              <label class="label is-small">First Payment Date</label>
+              <div class="control">
+                <input class="input" type="date" id="first_payment_date" placeholder="First Payment Date"
+                  value="2024-02-01">
+              </div>
+            </div>
+            <div class="field column">
+              <label class="label is-small">First Capitalisation Date</label>
+              <div class="control">
+                <input class="input" type="date" id="first_capitalisation_date" placeholder="First Capitalisation Date"
+                  value="2024-03-01">
+              </div>
             </div>
           </div>
-        </div>
+          <div class="columns">
+            <div class="field column is-narrow">
+              <label class="label is-small">Interest Method</label>
+              <div class="control">
+                <div class="select">
+                  <select id="interest_method">
+                    <option value="Convention30_360">Convention30_360</option>
+                    <option value="ActualActual" selected>ActualActual</option>
+                    <option value="Actual360">Actual360</option>
+                    <option value="Actual365">Actual365</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="column">
+              <div class="interest-explanation notification content is-small">
+                <p class="Convention30_360 is-hidden">The 30/360 convention calculates the daily interest using a
+                  360-day
+                  year and then multiplies that by 30 days (standardized month). Interest is only applied to the first
+                  30
+                  days of the month. This convention recognizes 3 days' worth of interest on February 28. </p>
+                <p class="ActualActual">The Actual/Actual convention calculates the daily interest using the actual
+                  number
+                  of days in the year and then multiplies that by the actual number of days in each month. The total
+                  interest varies from month to month.</p>
+                <p class="Actual360 is-hidden">The Actual/360 convention calculates the daily interest using a 360-day
+                  year and then multiplies that by the actual number of days in each period. The total interest varies
+                  from month to month.</p>
+                <p class="Actual365 is-hidden">The Actual/365 convention calculates the daily interest using a 365-day
+                  year and then multiplies that by the actual number of days in each period. The total interest varies
+                  from month to month.</p>
+              </div>
+            </div>
+          </div>
       </form>
 
     </div>
   </section>
 
   <section class="section pt-0">
+    <div class="notification is-danger is-hidden">
+      <span id="error-message"></span>
+    </div>
     <div class="box">
       <div class="columns">
         <div class="column">
@@ -141,6 +158,18 @@
           <div class="notification is-info">
             <p class="heading">Total Interest</p>
             <p class="title"><span id="total-interest">0</span></p>
+          </div>
+        </div>
+        <div class="column">
+          <div class="notification is-info">
+            <p class="heading">Nominal Interest Rate</p>
+            <p class="title"><span id="annual-rate">0</span>%</p>
+          </div>
+        </div>
+        <div class="column">
+          <div class="notification is-info">
+            <p class="heading">Calculated APR</p>
+            <p class="title"><span id="calculated-apr">0</span>%</p>
           </div>
         </div>
       </div>

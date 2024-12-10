@@ -21,6 +21,7 @@ To use this application, you need to provide the following command line argument
 - `--first_payment_date` or `-f`: The date of the first payment (YYYY-MM-DD)
 - `--first_capitalisation_date` or `-c`: The first capitalisation date (YYYY-MM-DD)
 - `--interest_method` or `-i`: The interest calculation method (Convention30_360, Actual365, Actual360, ActualActual)
+- `--interest_type` or `-t`: The interest rate type (Simple, Compound)
 
 ### Example
 
@@ -32,14 +33,15 @@ cargo run -- \
     --disbursal_date 2023-01-01 \
     --first_payment_date 2023-02-01 \
     --first_capitalisation_date 2023-01-15 \
-    --interest_method ActualActual
+    --interest_method ActualActual \
+    --interest_type Simple
 ```
 
 ### Building
 To build the executable, run the following command in the root directory of the project:
 
 ```sh
-cargo build
+cargo build && wasm-pack build --target web
 ```
 
 For a release build, use:

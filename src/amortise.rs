@@ -8,9 +8,10 @@ use rust_decimal::prelude::*;
 use rust_decimal::Decimal;
 
 pub use interest::InterestMethod;
+pub use interest::InterestType;
+use schedule::build_schedule;
 pub use schedule::Payment;
 pub use schedule::Schedule;
-use schedule::build_schedule;
 use secant::secant_method;
 use utils::round_decimal;
 
@@ -25,6 +26,7 @@ pub fn amortise(
     first_payment_date: NaiveDate,
     first_capitalisation_date: NaiveDate,
     interest_method: InterestMethod,
+    interest_type: InterestType,
 ) -> Schedule {
     let mut period_payment = calculate_rough_period_payment(principal, annual_rate, num_payments);
 
@@ -39,6 +41,7 @@ pub fn amortise(
             annual_rate,
             period_payment,
             interest_method,
+            interest_type,
             false,
         );
         schedule.payments.last().unwrap().balance // final balance
@@ -70,6 +73,7 @@ pub fn amortise(
         annual_rate,
         period_payment,
         interest_method,
+        interest_type,
         true,
     );
 
