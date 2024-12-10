@@ -9,6 +9,7 @@ use rust_decimal::Decimal;
 
 pub use interest::InterestMethod;
 pub use schedule::Payment;
+pub use schedule::Schedule;
 use schedule::build_schedule;
 use secant::secant_method;
 use utils::round_decimal;
@@ -24,7 +25,7 @@ pub fn amortise(
     first_payment_date: NaiveDate,
     first_capitalisation_date: NaiveDate,
     interest_method: InterestMethod,
-) -> Vec<Payment> {
+) -> Schedule {
     let mut period_payment = calculate_rough_period_payment(principal, annual_rate, num_payments);
 
     let f = |period_payment| {
@@ -40,7 +41,7 @@ pub fn amortise(
             interest_method,
             false,
         );
-        schedule.last().unwrap().balance // final balance
+        schedule.payments.last().unwrap().balance // final balance
     };
 
     let estimate_window = Decimal::from_f32(ESTIMATE_WINDOW).unwrap();
@@ -54,7 +55,7 @@ pub fn amortise(
         Some(root) => root,
         None => {
             println!("Failed to converge");
-            return vec![];
+            return Schedule::new();
         }
     };
 

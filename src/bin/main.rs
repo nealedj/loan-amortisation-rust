@@ -57,11 +57,12 @@ fn main() {
         first_capitalisation_date,
         interest_method,
     ); 
+    let payments = schedule.payments;
 
     match output_format {
-        "json" => print_json(&schedule),
-        "tsv" => print_tsv(&schedule),
-        _ => print_table(&schedule),
+        "json" => print_json(&payments),
+        "tsv" => print_tsv(&payments),
+        _ => print_table(&payments),
     }
 
 }

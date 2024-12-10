@@ -117,9 +117,8 @@ function setup(init, amortise_wasm) {
       first_payment_date,
       first_capitalisation_date,
       interest_method);
-    console.log(schedule);
 
-    schedule.forEach(element => {
+    schedule.payments.forEach(element => {
       const row = document.createElement('tr');
       const month = document.createElement('td');
       month.textContent = element.month;
@@ -139,7 +138,11 @@ function setup(init, amortise_wasm) {
       document.querySelector('table tbody').appendChild(row);
     });
 
-    renderChart(schedule);
+    document.getElementById('monthly-payment').textContent = schedule.payments[0].payment;
+    document.getElementById('total-payable').textContent = schedule.totals.total_payable;
+    document.getElementById('total-interest').textContent = schedule.totals.total_interest;
+
+    renderChart(schedule.payments);
   }
 
   (function setupSliders() {
@@ -156,7 +159,7 @@ function setup(init, amortise_wasm) {
   (function setupInterestMethod() {
     document.getElementById('interest_method').addEventListener('change', function () {
       const interest_method = this.value;
-      document.querySelectorAll('.notification p').forEach(element => {
+      document.querySelectorAll('.interest-explanation.notification p').forEach(element => {
         element.classList.add('is-hidden');
       });
       document.querySelector(`.notification p.${interest_method}`).classList.remove('is-hidden');

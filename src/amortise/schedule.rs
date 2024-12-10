@@ -13,6 +13,31 @@ pub struct Payment {
     pub interest: Decimal,
     pub balance: Decimal,
 }
+#[derive(Debug, Serialize)]
+
+pub struct Totals {
+    pub total_payable: Decimal,
+    pub total_principal: Decimal,
+    pub total_interest: Decimal,
+}
+#[derive(Debug, Serialize)]
+pub struct Schedule {
+    pub payments: Vec<Payment>,
+    pub totals: Totals,
+}
+
+impl Schedule {
+    pub fn new() -> Self {
+        Schedule {
+            payments: Vec::new(),
+            totals: Totals {
+                total_payable: Decimal::from(0),
+                total_principal: Decimal::from(0),
+                total_interest: Decimal::from(0),
+            },
+        }
+    }
+}
 
 pub fn build_schedule(
     principal: Decimal,
@@ -24,10 +49,10 @@ pub fn build_schedule(
     period_payment: Decimal,
     interest_method: InterestMethod,
     settle_balance: bool,
-) -> Vec<Payment> {
+) -> Schedule {
     let daily_rate = get_daily_interest_rate(annual_rate, interest_method);
 
-    let mut schedule = Vec::new();
+    let mut schedule = Schedule::new();
     let mut balance = principal;
     let mut interest_payable_from = disbursal_date;
     let mut next_cap_date = first_capitalisation_date;
@@ -56,13 +81,16 @@ pub fn build_schedule(
 
         balance = round_decimal(balance - principal_payment, None, None, None);
 
-        schedule.push(Payment {
+        schedule.payments.push(Payment {
             month,
             payment: payment,
             principal: principal_payment,
             interest,
             balance,
         });
+        schedule.totals.total_payable += payment;
+        schedule.totals.total_principal += principal_payment;
+        schedule.totals.total_interest += interest;
 
         interest_payable_from = next_cap_date + Days::new(1);
         next_cap_date = next_cap_date + Months::new(1);
@@ -101,8 +129,11 @@ mod tests {
             true,
         );
 
-        assert_eq!(schedule.len(), 36);
-        assert_eq!(schedule.last().unwrap().balance, Decimal::from(0));
+        assert_eq!(schedule.payments.len(), 36);
+        assert_eq!(schedule.payments.last().unwrap().balance, Decimal::from(0));
+        assert_eq!(schedule.totals.total_payable, Decimal::from_str("17073.12").unwrap());
+        assert_eq!(schedule.totals.total_principal, Decimal::from_str("15000").unwrap());
+        assert_eq!(schedule.totals.total_interest, Decimal::from_str("2073.12").unwrap());
     }
 
     #[test]
