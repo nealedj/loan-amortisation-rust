@@ -107,7 +107,7 @@ function setup(init, amortise_wasm) {
       chart.destroy();
     }
     updateBoxes(0, 0, 0, 0, 0);
-    document.getElementsByClassName('is-danger')[0].classList.add('is-hidden');
+    document.getElementById('error-container').classList.add('is-hidden');
 
     const principal = parseFloat(document.getElementById('principal').value);
     const annual_rate = parseFloat(document.getElementById('annual_rate').value);
@@ -135,7 +135,7 @@ function setup(init, amortise_wasm) {
     }
     catch(e) {
       console.log(e);
-      document.getElementsByClassName('is-danger')[0].classList.remove('is-hidden');
+      document.getElementById('error-container').classList.remove('is-hidden');
       document.getElementById('error-message').innerHTML = e.message + e.stack.replace(/\n/g, '<br>');
       return;
     }
