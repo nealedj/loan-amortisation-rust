@@ -116,6 +116,39 @@ function setup(init, amortise_wasm) {
     return nextMonthDate.toISOString().split('T')[0];
   }
 
+  function saveToLocalStorage() {
+    const inputs = document.querySelectorAll('input, select');
+    inputs.forEach(input => {
+      localStorage.setItem(input.id, input.type === 'checkbox' ? input.checked : input.value);
+    });
+  }
+
+  function loadFromLocalStorage() {
+    const inputs = document.querySelectorAll('input, select');
+    inputs.forEach(input => {
+      const value = localStorage.getItem(input.id);
+      if (value !== null) {
+        if (input.type === 'checkbox') {
+          input.checked = value === 'true';
+        } else {
+          input.value = value;
+        }
+      }
+    });
+  }
+
+  function resetInputs() {
+    localStorage.clear();
+    document.getElementById('loan-form').reset();
+    const today = new Date();
+    const firstPaymentDate = getNextMonthFirst(today);
+    document.getElementById('disbursal_date').value = today.toISOString().split('T')[0];
+    document.getElementById('first_payment_date').value = firstPaymentDate;
+    document.getElementById('first_capitalisation_date').value = firstPaymentDate;
+    document.getElementById('first_capitalisation_date').disabled = true;
+    calculate();
+  }
+
   async function calculate() {
     await init();
 
@@ -186,6 +219,8 @@ function setup(init, amortise_wasm) {
     );
 
     renderChart(schedule.payments);
+
+    saveToLocalStorage();
   }
 
   function updateBoxes(monthlyPayment, totalPayable, totalInterest, annualRate, calculatedApr) {
@@ -271,6 +306,8 @@ function setup(init, amortise_wasm) {
   document.getElementById('first_payment_date').value = firstPaymentDate;
   document.getElementById('first_capitalisation_date').value = firstPaymentDate;
 
+  loadFromLocalStorage();
+
   document.getElementById('cap_date_checkbox').addEventListener('change', function() {
     const capDateInput = document.getElementById('first_capitalisation_date');
     if (this.checked) {
@@ -279,6 +316,7 @@ function setup(init, amortise_wasm) {
       capDateInput.disabled = true;
       capDateInput.value = document.getElementById('first_payment_date').value;
     }
+    saveToLocalStorage();
   });
 
   document.getElementById('first_payment_date').addEventListener('change', function() {
@@ -286,7 +324,14 @@ function setup(init, amortise_wasm) {
     if (!capDateCheckbox.checked) {
       document.getElementById('first_capitalisation_date').value = this.value;
     }
+    saveToLocalStorage();
   });
+
+  document.querySelectorAll('input, select').forEach(input => {
+    input.addEventListener('change', saveToLocalStorage);
+  });
+
+  document.getElementById('reset-button').addEventListener('click', resetInputs);
 
   calculate();
 

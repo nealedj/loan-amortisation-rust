@@ -28,7 +28,7 @@
   <section class="section pb-4">
     <h1 class="title">Loan Amortisation WASM Test Bed</h1>
     <div class="container">
-      <form>
+      <form id="loan-form">
         <div class="field">
           <label class="label is-small">Principal</label>
           <div class="control columns is-mobile">
@@ -134,6 +134,11 @@
               </div>
             </div>
           </div>
+          <div class="field">
+            <div class="control">
+              <button type="button" id="reset-button" class="button is-danger">Reset</button>
+            </div>
+          </div>
       </form>
 
     </div>
@@ -213,8 +218,6 @@
   <script type="module">
     import init, { amortise_wasm } from './loan_amortisation_rust.js';
     setup(init, amortise_wasm);
-
-
   </script>
 
 </body>
