@@ -99,6 +99,23 @@ function setup(init, amortise_wasm) {
     });
   }
 
+  function getNextMonthFirst(date) {
+    const originalDate = new Date(date);
+    const nextMonthDate = new Date(originalDate);
+    nextMonthDate.setMonth(nextMonthDate.getMonth() + 1);
+    nextMonthDate.setDate(1);
+
+    const differenceInDays = Math.floor(
+      (nextMonthDate - originalDate) / (1000 * 60 * 60 * 24)
+    );
+
+    if (differenceInDays < 20) {
+      nextMonthDate.setMonth(nextMonthDate.getMonth() + 1);
+    }
+
+    return nextMonthDate.toISOString().split('T')[0];
+  }
+
   async function calculate() {
     await init();
 
@@ -112,9 +129,9 @@ function setup(init, amortise_wasm) {
     const principal = parseFloat(document.getElementById('principal').value);
     const annual_rate = parseFloat(document.getElementById('annual_rate').value);
     const num_payments = parseInt(document.getElementById('num_payments').value);
-    const disbursal_date = document.getElementById('disbursal_date').value;
-    const first_payment_date = document.getElementById('first_payment_date').value;
-    const first_capitalisation_date = document.getElementById('first_capitalisation_date').value;
+    const disbursal_date = document.getElementById('disbursal_date').value || new Date().toISOString().split('T')[0];
+    const first_payment_date = document.getElementById('first_payment_date').value || getNextMonthFirst(disbursal_date);
+    const first_capitalisation_date = document.getElementById('cap_date_checkbox').checked ? document.getElementById('first_capitalisation_date').value : first_payment_date;
     const interest_method = document.getElementById('interest_method').value;
 
     const interest_type_rd = document.querySelector('input[name="interest_type"]:checked');
@@ -247,6 +264,29 @@ function setup(init, amortise_wasm) {
       });
     });
   })();
+
+  const today = new Date();
+  const firstPaymentDate = getNextMonthFirst(today);
+  document.getElementById('disbursal_date').value = today.toISOString().split('T')[0];
+  document.getElementById('first_payment_date').value = firstPaymentDate;
+  document.getElementById('first_capitalisation_date').value = firstPaymentDate;
+
+  document.getElementById('cap_date_checkbox').addEventListener('change', function() {
+    const capDateInput = document.getElementById('first_capitalisation_date');
+    if (this.checked) {
+      capDateInput.disabled = false;
+    } else {
+      capDateInput.disabled = true;
+      capDateInput.value = document.getElementById('first_payment_date').value;
+    }
+  });
+
+  document.getElementById('first_payment_date').addEventListener('change', function() {
+    const capDateCheckbox = document.getElementById('cap_date_checkbox');
+    if (!capDateCheckbox.checked) {
+      document.getElementById('first_capitalisation_date').value = this.value;
+    }
+  });
 
   calculate();
 

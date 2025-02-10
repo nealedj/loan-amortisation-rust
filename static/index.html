@@ -78,21 +78,24 @@
             <div class="field column">
               <label class="label is-small">Disbursal Date</label>
               <div class="control">
-                <input class="input" type="date" id="disbursal_date" placeholder="Disbursal Date" value="2024-01-20">
+                <input class="input" type="date" id="disbursal_date" placeholder="Disbursal Date" value="">
               </div>
             </div>
             <div class="field column">
               <label class="label is-small">First Payment Date</label>
               <div class="control">
                 <input class="input" type="date" id="first_payment_date" placeholder="First Payment Date"
-                  value="2024-02-01">
+                  value="">
               </div>
             </div>
             <div class="field column">
               <label class="label is-small">First Capitalisation Date</label>
               <div class="control">
-                <input class="input" type="date" id="first_capitalisation_date" placeholder="First Capitalisation Date"
-                  value="2024-03-01">
+                <input class="input" type="date" id="first_capitalisation_date" placeholder="First Capitalisation Date" value="" disabled>
+                <label class="checkbox">
+                  <input type="checkbox" id="cap_date_checkbox">
+                  Different from Payment Date
+                </label>
               </div>
             </div>
           </div>
@@ -210,6 +213,8 @@
   <script type="module">
     import init, { amortise_wasm } from './loan_amortisation_rust.js';
     setup(init, amortise_wasm);
+
+
   </script>
 
 </body>
