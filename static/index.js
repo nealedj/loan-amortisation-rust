@@ -116,6 +116,20 @@ function setup(init, amortise_wasm) {
     return nextMonthDate.toISOString().split('T')[0];
   }
 
+  function logScale(value, min, max) {
+    const minLog = Math.log(min);
+    const maxLog = Math.log(max);
+    const scale = (maxLog - minLog) / 100;
+    return Math.exp(minLog + scale * value);
+  }
+
+  function logScaleInverse(value, min, max) {
+    const minLog = Math.log(min);
+    const maxLog = Math.log(max);
+    const scale = (maxLog - minLog) / 100;
+    return (Math.log(value) - minLog) / scale;
+  }
+
   function saveToLocalStorage() {
     const inputs = document.querySelectorAll('input, select');
     inputs.forEach(input => {
@@ -232,7 +246,14 @@ function setup(init, amortise_wasm) {
   }
 
   (function setupSliders() {
-    ['principal', 'annual_rate', 'num_payments'].forEach(element => {
+    document.getElementById('principal').addEventListener('input', function () {
+      document.getElementById('principal_slider').value = logScaleInverse(this.value, 100, 10000000);
+    });
+    document.getElementById('principal_slider').addEventListener('input', function () {
+      document.getElementById('principal').value = Math.round(logScale(this.value, 100, 10000000));
+    });
+
+    ['annual_rate', 'num_payments'].forEach(element => {
       document.getElementById(element).addEventListener('input', function () {
         document.getElementById(`${element}_slider`).value = this.value;
       });
@@ -267,9 +288,6 @@ function setup(init, amortise_wasm) {
       'annual_rate',
       'num_payments'].forEach(element => {
         let txtEl = document.getElementById(element);
-        txtEl.addEventListener('change', function () {
-          document.getElementById(`${element}_slider`).value = this.value;
-        });
         txtEl.addEventListener('blur', function () {
           calculate();
         });
@@ -281,7 +299,6 @@ function setup(init, amortise_wasm) {
         let sliderEl = document.getElementById(element);
         sliderEl.addEventListener('input', function () {
           isDragging = true;
-          document.getElementById(element.replace('_slider', '')).value = this.value
         });
 
         sliderEl.addEventListener('change', function () {
