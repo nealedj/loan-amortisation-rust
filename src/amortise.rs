@@ -106,6 +106,8 @@ fn calculate_rough_period_payment(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::NaiveDate;
+    use rust_decimal_macros::dec;
 
     #[test]
     fn test_calculate_rough_period_payment() {
@@ -116,5 +118,101 @@ mod tests {
         let period_payment = calculate_rough_period_payment(principal, annual_rate, num_payments);
 
         assert!(period_payment > Decimal::from(0));
+    }
+
+    #[test]
+    fn test_amortise_with_fixed_payment() {
+        let principal = dec!(15000);
+        let annual_rate = dec!(0.05); // 5% annual rate
+        let num_payments = 6;
+        let fixed_payment = dec!(2700);
+        
+        let disbursal_date = NaiveDate::from_ymd_opt(2023, 1, 1).unwrap();
+        let first_payment_date = NaiveDate::from_ymd_opt(2023, 2, 1).unwrap();
+        let first_capitalisation_date = NaiveDate::from_ymd_opt(2023, 2, 1).unwrap();
+
+        // Test with fixed payment
+        let schedule_fixed = amortise(
+            principal,
+            annual_rate,
+            num_payments,
+            disbursal_date,
+            first_payment_date,
+            first_capitalisation_date,
+            InterestMethod::ActualActual,
+            InterestType::Simple,
+            Some(fixed_payment),
+        );
+
+        // Test without fixed payment (calculated payment)
+        let schedule_calculated = amortise(
+            principal,
+            annual_rate,
+            num_payments,
+            disbursal_date,
+            first_payment_date,
+            first_capitalisation_date,
+            InterestMethod::ActualActual,
+            InterestType::Simple,
+            None,
+        );
+
+        // Verify fixed payment schedule properties
+        assert_eq!(schedule_fixed.payments.len(), num_payments as usize);
+        
+        // All payments except potentially the last should equal the fixed amount
+        for (i, payment) in schedule_fixed.payments.iter().enumerate() {
+            if i < (num_payments - 1) as usize {
+                assert_eq!(payment.payment, fixed_payment);
+            }
+            assert!(payment.principal > Decimal::ZERO);
+            assert!(payment.interest >= Decimal::ZERO);
+        }
+
+        // With a high fixed payment ($2700), the loan should be paid off early
+        // (final balance should be negative, indicating overpayment)
+        let final_balance = schedule_fixed.payments.last().unwrap().balance;
+        assert!(final_balance < Decimal::ZERO, "Expected negative final balance with high fixed payment");
+
+        // Verify calculated payment schedule balances to zero
+        let calculated_final_balance = schedule_calculated.payments.last().unwrap().balance;
+        assert_eq!(calculated_final_balance, Decimal::ZERO, "Calculated payment should result in zero final balance");
+
+        // Fixed payment should be different from calculated payment
+        let calculated_payment = schedule_calculated.payments[0].payment;
+        assert_ne!(fixed_payment, calculated_payment, "Fixed payment should differ from calculated payment");
+    }
+
+    #[test]
+    fn test_amortise_with_low_fixed_payment() {
+        let principal = dec!(15000);
+        let annual_rate = dec!(0.05);
+        let num_payments = 6;
+        let low_fixed_payment = dec!(2000); // Lower than optimal payment
+        
+        let disbursal_date = NaiveDate::from_ymd_opt(2023, 1, 1).unwrap();
+        let first_payment_date = NaiveDate::from_ymd_opt(2023, 2, 1).unwrap();
+        let first_capitalisation_date = NaiveDate::from_ymd_opt(2023, 2, 1).unwrap();
+
+        let schedule = amortise(
+            principal,
+            annual_rate,
+            num_payments,
+            disbursal_date,
+            first_payment_date,
+            first_capitalisation_date,
+            InterestMethod::ActualActual,
+            InterestType::Simple,
+            Some(low_fixed_payment),
+        );
+
+        // With low fixed payment, loan should not be fully paid off
+        let final_balance = schedule.payments.last().unwrap().balance;
+        assert!(final_balance > Decimal::ZERO, "Expected positive remaining balance with low fixed payment");
+
+        // All payments should equal the fixed amount
+        for payment in &schedule.payments {
+            assert_eq!(payment.payment, low_fixed_payment);
+        }
     }
 }
