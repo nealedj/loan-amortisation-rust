@@ -53,6 +53,10 @@ fn main() {
 
     let output_format = matches.get_one::<String>("output_format").unwrap().as_str();
 
+    let fixed_payment = matches
+        .get_one::<String>("fixed_payment")
+        .map(|fp| Decimal::from_str(fp).unwrap());
+
     let schedule = amortise(
         principal,
         annual_rate,
@@ -62,6 +66,7 @@ fn main() {
         first_capitalisation_date,
         interest_method,
         interest_type,
+        fixed_payment,
     );
     let payments = schedule.payments;
 
@@ -133,6 +138,11 @@ fn parse_arguments() -> clap::ArgMatches {
             .default_value("table")
             .value_name("OUTPUT_FORMAT")
             .help("Sets the output format (json, table, tsv)")
+            .required(false))
+        .arg(Arg::new("fixed_payment")
+            .long("fixed_payment")
+            .value_name("FIXED_PAYMENT")
+            .help("Sets a fixed monthly payment amount (optional)")
             .required(false))
         .get_matches();
 

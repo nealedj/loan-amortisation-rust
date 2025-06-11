@@ -27,42 +27,49 @@ pub fn amortise(
     first_capitalisation_date: NaiveDate,
     interest_method: InterestMethod,
     interest_type: InterestType,
+    fixed_payment: Option<Decimal>,
 ) -> Schedule {
-    let mut period_payment = calculate_rough_period_payment(principal, annual_rate, num_payments);
+    let period_payment = if let Some(fixed_payment) = fixed_payment {
+        // Use the provided fixed payment amount
+        fixed_payment
+    } else {
+        // Calculate payment using secant method as before
+        let mut period_payment = calculate_rough_period_payment(principal, annual_rate, num_payments);
 
-    let f = |period_payment| {
-        println!("Trying period payment: {}", period_payment);
-        let schedule = build_schedule(
-            principal,
-            disbursal_date,
-            first_capitalisation_date,
-            first_payment_date,
-            num_payments,
-            annual_rate,
-            period_payment,
-            interest_method,
-            interest_type,
-            false,
-        );
-        schedule.payments.last().unwrap().balance // final balance
+        let f = |period_payment| {
+            println!("Trying period payment: {}", period_payment);
+            let schedule = build_schedule(
+                principal,
+                disbursal_date,
+                first_capitalisation_date,
+                first_payment_date,
+                num_payments,
+                annual_rate,
+                period_payment,
+                interest_method,
+                interest_type,
+                false,
+            );
+            schedule.payments.last().unwrap().balance // final balance
+        };
+
+        let estimate_window = Decimal::from_f32(ESTIMATE_WINDOW).unwrap();
+        period_payment = match secant_method(
+            f,
+            period_payment / estimate_window,
+            period_payment * estimate_window,
+            Decimal::new(1, 2),
+            4,
+        ) {
+            Some(root) => root,
+            None => {
+                println!("Failed to converge");
+                return Schedule::new();
+            }
+        };
+
+        round_decimal(period_payment, None, None, None)
     };
-
-    let estimate_window = Decimal::from_f32(ESTIMATE_WINDOW).unwrap();
-    period_payment = match secant_method(
-        f,
-        period_payment / estimate_window,
-        period_payment * estimate_window,
-        Decimal::new(1, 2),
-        4,
-    ) {
-        Some(root) => root,
-        None => {
-            println!("Failed to converge");
-            return Schedule::new();
-        }
-    };
-
-    period_payment = round_decimal(period_payment, None, None, None);
 
     let schedule = build_schedule(
         principal,
@@ -74,7 +81,7 @@ pub fn amortise(
         period_payment,
         interest_method,
         interest_type,
-        true,
+        fixed_payment.is_none(), // Only settle balance if we calculated the payment
     );
 
     schedule

@@ -1,6 +1,7 @@
 function setup(init, amortise_wasm) {
   const ctx = document.getElementById('loanChart').getContext('2d');
   let chart;
+  let lastCalculatedSchedule = null; // Store the last calculated schedule
   function renderChart(data) {
 
     chart = new Chart(ctx, {
@@ -184,6 +185,10 @@ function setup(init, amortise_wasm) {
     const interest_type_rd = document.querySelector('input[name="interest_type"]:checked');
     const interest_type = interest_type_rd ? interest_type_rd.value : null;
 
+    const use_fixed_payment = document.getElementById('use_fixed_payment').checked;
+    const fixed_payment_value = document.getElementById('fixed_payment').value;
+    const fixed_payment = use_fixed_payment && fixed_payment_value ? parseFloat(fixed_payment_value) : null;
+
     let schedule;
     try {
       schedule = amortise_wasm(
@@ -195,6 +200,7 @@ function setup(init, amortise_wasm) {
         first_capitalisation_date,
         interest_method,
         interest_type,
+        fixed_payment,
       );
     }
     catch(e) {
@@ -234,6 +240,17 @@ function setup(init, amortise_wasm) {
 
     renderChart(schedule.payments);
 
+    lastCalculatedSchedule = schedule; // Store the schedule for use in other functions
+    
+    // If the fixed payment checkbox is checked but the input is empty, populate it now
+    const useFixedPaymentCheckbox = document.getElementById('use_fixed_payment');
+    const fixedPaymentInput = document.getElementById('fixed_payment');
+    if (useFixedPaymentCheckbox.checked && !fixedPaymentInput.value && schedule.payments.length > 0) {
+      const firstPayment = parseFloat(schedule.payments[0].payment).toFixed(2);
+      console.log('Populating fixed payment input after calculation:', firstPayment);
+      fixedPaymentInput.value = firstPayment;
+    }
+    
     saveToLocalStorage();
   }
 
@@ -347,6 +364,37 @@ function setup(init, amortise_wasm) {
   document.querySelectorAll('input, select').forEach(input => {
     input.addEventListener('change', saveToLocalStorage);
   });
+
+  document.getElementById('use_fixed_payment').addEventListener('change', function() {
+    const fixedPaymentInput = document.getElementById('fixed_payment');
+    if (this.checked) {
+      fixedPaymentInput.disabled = false;
+      // If the input is empty, populate with the first payment from the schedule
+      if (!fixedPaymentInput.value) {
+        if (lastCalculatedSchedule && lastCalculatedSchedule.payments.length > 0) {
+          const firstPayment = parseFloat(lastCalculatedSchedule.payments[0].payment).toFixed(2);
+          console.log('Populating fixed payment input with:', firstPayment);
+          fixedPaymentInput.value = firstPayment;
+        } else {
+          // If no schedule is available yet, we'll populate it after the calculation below
+          console.log('No schedule available yet, will populate after calculation');
+        }
+      }
+    } else {
+      fixedPaymentInput.disabled = true;
+      fixedPaymentInput.value = '';
+    }
+    calculate();
+  });
+
+  document.getElementById('fixed_payment').addEventListener('input', function() {
+    if (document.getElementById('use_fixed_payment').checked) {
+      calculate();
+    }
+  });
+
+  // Initialize fixed payment input state
+  document.getElementById('fixed_payment').disabled = !document.getElementById('use_fixed_payment').checked;
 
   document.getElementById('reset-button').addEventListener('click', resetInputs);
 
