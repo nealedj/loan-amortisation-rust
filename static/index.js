@@ -161,6 +161,10 @@ function setup(init, amortise_wasm) {
     document.getElementById('first_payment_date').value = firstPaymentDate;
     document.getElementById('first_capitalisation_date').value = firstPaymentDate;
     document.getElementById('first_capitalisation_date').disabled = true;
+    // Set default values
+    document.getElementById('balloon_payment').value = '0';
+    document.getElementById('balloon_payment_slider').value = '0';
+    document.getElementById('option_fee').value = '0';
     calculate();
   }
 
@@ -189,6 +193,12 @@ function setup(init, amortise_wasm) {
     const fixed_payment_value = document.getElementById('fixed_payment').value;
     const fixed_payment = use_fixed_payment && fixed_payment_value ? parseFloat(fixed_payment_value) : null;
 
+    const balloon_payment_value = document.getElementById('balloon_payment').value;
+    const balloon_payment = balloon_payment_value && parseFloat(balloon_payment_value) > 0 ? parseFloat(balloon_payment_value) : null;
+
+    const option_fee_value = document.getElementById('option_fee').value;
+    const option_fee = option_fee_value && parseFloat(option_fee_value) > 0 ? parseFloat(option_fee_value) : null;
+
     let schedule;
     try {
       schedule = amortise_wasm(
@@ -201,6 +211,8 @@ function setup(init, amortise_wasm) {
         interest_method,
         interest_type,
         fixed_payment,
+        balloon_payment,
+        option_fee,
       );
     }
     catch(e) {
@@ -274,9 +286,17 @@ function setup(init, amortise_wasm) {
       document.getElementById(element).addEventListener('input', function () {
         document.getElementById(`${element}_slider`).value = this.value;
       });
-      document.getElementById(`${element}_slider`).addEventListener('change', function () {
+      document.getElementById(`${element}_slider`).addEventListener('input', function () {
         document.getElementById(element).value = this.value;
       });
+    });
+
+    // Balloon payment slider synchronization
+    document.getElementById('balloon_payment').addEventListener('input', function () {
+      document.getElementById('balloon_payment_slider').value = this.value;
+    });
+    document.getElementById('balloon_payment_slider').addEventListener('input', function () {
+      document.getElementById('balloon_payment').value = this.value;
     });
   })();
 
@@ -303,7 +323,8 @@ function setup(init, amortise_wasm) {
 
     ['principal',
       'annual_rate',
-      'num_payments'].forEach(element => {
+      'num_payments',
+      'balloon_payment'].forEach(element => {
         let txtEl = document.getElementById(element);
         txtEl.addEventListener('blur', function () {
           calculate();
@@ -312,7 +333,8 @@ function setup(init, amortise_wasm) {
 
     ['principal_slider',
       'annual_rate_slider',
-      'num_payments_slider'].forEach(element => {
+      'num_payments_slider',
+      'balloon_payment_slider'].forEach(element => {
         let sliderEl = document.getElementById(element);
         sliderEl.addEventListener('input', function () {
           isDragging = true;
@@ -395,6 +417,11 @@ function setup(init, amortise_wasm) {
 
   // Initialize fixed payment input state
   document.getElementById('fixed_payment').disabled = !document.getElementById('use_fixed_payment').checked;
+
+  // Option fee event listeners
+  document.getElementById('option_fee').addEventListener('input', function() {
+    calculate();
+  });
 
   document.getElementById('reset-button').addEventListener('click', resetInputs);
 

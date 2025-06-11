@@ -62,6 +62,8 @@ pub fn build_schedule(
     interest_method: InterestMethod,
     interest_type: InterestType,
     settle_balance: bool,
+    balloon_payment: Option<Decimal>,
+    option_fee: Option<Decimal>,
 ) -> Schedule {
     let mut schedule = Schedule::new();
 
@@ -89,16 +91,42 @@ pub fn build_schedule(
             period_payment,
             interest_method,
         );
-        let principal_payment;
-        let payment;
+        let mut principal_payment;
+        let mut payment;
 
         if settle_balance && month == num_payments {
+            // For the final payment, add any remaining balance
             payment = balance + interest;
+            // Add option fee to final payment if present
+            if let Some(fee) = option_fee {
+                payment += fee;
+            }
+        } else if month == num_payments && balloon_payment.is_some() {
+            // Final payment with balloon payment - the payment IS the balloon payment amount
+            payment = balloon_payment.unwrap();
+            // Add option fee to balloon payment if present
+            if let Some(fee) = option_fee {
+                payment += fee;
+            }
         } else {
             payment = period_payment;
         }
 
         principal_payment = round_decimal(payment - interest, None, None, None);
+        
+        // Adjust principal payment to exclude option fee
+        if month == num_payments && option_fee.is_some() {
+            principal_payment = round_decimal(principal_payment - option_fee.unwrap(), None, None, None);
+        }
+        
+        // For balloon payments, adjust the principal payment calculation
+        if month == num_payments && balloon_payment.is_some() && !settle_balance {
+            // Final balloon payment: the principal payment should clear the remaining balance
+            principal_payment = balance;
+            // The interest for the final payment should be calculated normally
+            // The "payment" amount is the balloon payment amount, but for accounting purposes
+            // we track principal and interest separately
+        }
 
         balance = round_decimal(balance - principal_payment, None, None, None);
 
@@ -173,6 +201,8 @@ mod tests {
             InterestMethod::ActualActual,
             InterestType::Simple,
             true,
+            None, // no balloon payment
+            None, // no option fee
         );
 
         let apr = get_apr(schedule.payments);
@@ -203,6 +233,8 @@ mod tests {
             InterestMethod::ActualActual,
             InterestType::Simple,
             true,
+            None, // no balloon payment
+            None, // no option fee
         );
 
         assert_eq!(schedule.payments.len(), 36);

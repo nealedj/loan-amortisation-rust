@@ -57,6 +57,14 @@ fn main() {
         .get_one::<String>("fixed_payment")
         .map(|fp| Decimal::from_str(fp).unwrap());
 
+    let balloon_payment = matches
+        .get_one::<String>("balloon_payment")
+        .map(|bp| Decimal::from_str(bp).unwrap());
+
+    let option_fee = matches
+        .get_one::<String>("option_fee")
+        .map(|of| Decimal::from_str(of).unwrap());
+
     let schedule = amortise(
         principal,
         annual_rate,
@@ -67,6 +75,8 @@ fn main() {
         interest_method,
         interest_type,
         fixed_payment,
+        balloon_payment,
+        option_fee,
     );
     let payments = schedule.payments;
 
@@ -143,6 +153,16 @@ fn parse_arguments() -> clap::ArgMatches {
             .long("fixed_payment")
             .value_name("FIXED_PAYMENT")
             .help("Sets a fixed monthly payment amount (optional)")
+            .required(false))
+        .arg(Arg::new("balloon_payment")
+            .long("balloon_payment")
+            .value_name("BALLOON_PAYMENT")
+            .help("Sets a balloon payment amount due at the end (optional, for PCP loans)")
+            .required(false))
+        .arg(Arg::new("option_fee")
+            .long("option_fee")
+            .value_name("OPTION_FEE")
+            .help("Sets an option fee amount for HP loans (optional)")
             .required(false))
         .get_matches();
 
