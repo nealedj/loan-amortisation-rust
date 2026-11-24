@@ -1,0 +1,1 @@
+{"$message_type":"unused_extern","lint_level":"force-warn","unused_extern_names":["rust_decimal_macros","serde","serde_wasm_bindgen","wasm_bindgen","web_sys"]}

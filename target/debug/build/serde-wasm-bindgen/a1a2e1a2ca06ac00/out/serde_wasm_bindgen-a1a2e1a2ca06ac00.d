@@ -1,0 +1,10 @@
+/home/runner/work/loan-amortisation-rust/loan-amortisation-rust/target/debug/build/serde-wasm-bindgen/a1a2e1a2ca06ac00/out/serde_wasm_bindgen-a1a2e1a2ca06ac00.d: /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-wasm-bindgen-0.2.0/src/lib.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-wasm-bindgen-0.2.0/src/de.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-wasm-bindgen-0.2.0/src/error.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-wasm-bindgen-0.2.0/src/ser.rs
+
+/home/runner/work/loan-amortisation-rust/loan-amortisation-rust/target/debug/build/serde-wasm-bindgen/a1a2e1a2ca06ac00/out/libserde_wasm_bindgen-a1a2e1a2ca06ac00.rlib: /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-wasm-bindgen-0.2.0/src/lib.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-wasm-bindgen-0.2.0/src/de.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-wasm-bindgen-0.2.0/src/error.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-wasm-bindgen-0.2.0/src/ser.rs
+
+/home/runner/work/loan-amortisation-rust/loan-amortisation-rust/target/debug/build/serde-wasm-bindgen/a1a2e1a2ca06ac00/out/libserde_wasm_bindgen-a1a2e1a2ca06ac00.rmeta: /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-wasm-bindgen-0.2.0/src/lib.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-wasm-bindgen-0.2.0/src/de.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-wasm-bindgen-0.2.0/src/error.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-wasm-bindgen-0.2.0/src/ser.rs
+
+/home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-wasm-bindgen-0.2.0/src/lib.rs:
+/home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-wasm-bindgen-0.2.0/src/de.rs:
+/home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-wasm-bindgen-0.2.0/src/error.rs:
+/home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-wasm-bindgen-0.2.0/src/ser.rs:
