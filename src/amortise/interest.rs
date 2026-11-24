@@ -89,20 +89,24 @@ pub fn calculate_period_interest(
         interest = Decimal::from(0);
         let mut current_date = start_date;
 
+        // Actual/Actual: a day in a leap year accrues 1/366 of the annual rate rather than 1/365.
+        let leap_year_daily_rate = daily_rate * Decimal::from(365) / Decimal::from(366);
+
         let mut balance_m = balance;
-        let mut daily_rate_m = daily_rate;
         while current_date <= to_date {
-            if interest_method == InterestMethod::ActualActual && current_date.leap_year() {
-                // Adjust daily rate for leap year
-                daily_rate_m *= Decimal::from(365) / Decimal::from(366);
-            }
+            let day_rate =
+                if interest_method == InterestMethod::ActualActual && current_date.leap_year() {
+                    leap_year_daily_rate
+                } else {
+                    daily_rate
+                };
 
             // Reduce balance on payment date
             if current_date == payment_date {
                 balance_m -= payment_amount;
             }
 
-            interest += balance_m * daily_rate_m;
+            interest += balance_m * day_rate;
 
             current_date = current_date + Days::new(1);
             days += 1;
@@ -262,5 +266,35 @@ mod tests {
         assert_eq!(interest, dec!(3.89));
         assert_eq!(days, 30);
 
+    }
+
+    #[test]
+    fn test_calculate_period_interest_actualactual_leap_year() {
+        // 14 days on 100,000 then 16 days on 90,000 = 2,840,000 balance-days.
+        // In a leap year each day accrues 5%/366: 2,840,000 * 0.05 / 366 = 387.978...
+        let (interest, days) = calculate_period_interest(
+            NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            NaiveDate::from_ymd_opt(2024, 1, 30).unwrap(),
+            NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
+            get_daily_interest_rate(dec!(0.05), InterestMethod::ActualActual),
+            dec!(100000),
+            dec!(10000),
+            InterestMethod::ActualActual,
+        );
+
+        assert_eq!(interest, dec!(387.98));
+        assert_eq!(days, 30);
+
+        // Actual/365 ignores leap years: 2,840,000 * 0.05 / 365 = 389.04
+        let (interest_365, _) = calculate_period_interest(
+            NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            NaiveDate::from_ymd_opt(2024, 1, 30).unwrap(),
+            NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
+            get_daily_interest_rate(dec!(0.05), InterestMethod::Actual365),
+            dec!(100000),
+            dec!(10000),
+            InterestMethod::Actual365,
+        );
+        assert_eq!(interest_365, dec!(389.04));
     }
 }
