@@ -137,13 +137,32 @@ function setup(init, amortise_wasm) {
   function saveToLocalStorage() {
     const inputs = document.querySelectorAll('input, select');
     inputs.forEach(input => {
-      localStorage.setItem(input.id, input.type === 'checkbox' ? input.checked : input.value);
+      if (input.type === 'radio') {
+        // Radio buttons in a group share a name and have no id: store which one is checked.
+        if (input.checked) {
+          localStorage.setItem(input.name, input.value);
+        }
+      } else if (input.id) {
+        localStorage.setItem(input.id, input.type === 'checkbox' ? input.checked : input.value);
+      }
     });
   }
 
   function loadFromLocalStorage() {
+    // Earlier versions saved the id-less radio buttons under an empty key and then wrote that
+    // value into every radio button, so "Simple" ended up submitting "Compound".
+    localStorage.removeItem('');
+
     const inputs = document.querySelectorAll('input, select');
     inputs.forEach(input => {
+      if (input.type === 'radio') {
+        const checkedValue = localStorage.getItem(input.name);
+        if (checkedValue !== null) {
+          input.checked = input.value === checkedValue;
+        }
+        return;
+      }
+
       const value = localStorage.getItem(input.id);
       if (value !== null) {
         if (input.type === 'checkbox') {
