@@ -1,4 +1,7 @@
 function setup(init, amortise_wasm) {
+  const paymentLabel = element =>
+    element.payment_type === 'Balloon' ? `${element.month} (balloon)` : element.month;
+
   const ctx = document.getElementById('loanChart').getContext('2d');
   let chart;
   let lastCalculatedSchedule = null; // Store the last calculated schedule
@@ -6,7 +9,7 @@ function setup(init, amortise_wasm) {
 
     chart = new Chart(ctx, {
       data: {
-        labels: data.map(element => element.month),
+        labels: data.map(paymentLabel),
         datasets: [{
           type: 'line',
           label: 'Balance',
@@ -225,7 +228,7 @@ function setup(init, amortise_wasm) {
     schedule.payments.forEach(element => {
       const row = document.createElement('tr');
       const month = document.createElement('td');
-      month.textContent = element.month;
+      month.textContent = paymentLabel(element);
       row.appendChild(month);
       const payment = document.createElement('td');
       payment.textContent = element.payment;
@@ -236,6 +239,9 @@ function setup(init, amortise_wasm) {
       const principal = document.createElement('td');
       principal.textContent = element.principal;
       row.appendChild(principal);
+      const fee = document.createElement('td');
+      fee.textContent = element.fee;
+      row.appendChild(fee);
       const balance = document.createElement('td');
       balance.textContent = element.balance;
       row.appendChild(balance);

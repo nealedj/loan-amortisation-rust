@@ -1,3 +1,4 @@
+mod apr;
 mod interest;
 mod schedule;
 mod secant;
@@ -7,10 +8,12 @@ use chrono::NaiveDate;
 use rust_decimal::prelude::*;
 use rust_decimal::Decimal;
 
+use apr::calculate_annual_rate;
 pub use interest::InterestMethod;
 pub use interest::InterestType;
 use schedule::build_schedule;
 pub use schedule::Payment;
+pub use schedule::PaymentType;
 pub use schedule::Schedule;
 use secant::secant_method;
 use utils::round_decimal;
@@ -35,14 +38,9 @@ pub fn amortise(
         // Use the provided fixed payment amount
         fixed_payment
     } else {
-        // Calculate payment using secant method as before
-        // For balloon payment scenarios, reduce the principal by the balloon amount for calculation
-        let effective_principal = if let Some(balloon) = balloon_payment {
-            principal - balloon
-        } else {
-            principal
-        };
-        
+        // Find the regular payment that leaves a zero balance once every payment, including
+        // any balloon payment, has been made. The rough estimate only seeds the search.
+        let effective_principal = principal - balloon_payment.unwrap_or(Decimal::ZERO);
         let mut period_payment = calculate_rough_period_payment(effective_principal, annual_rate, num_payments);
 
         let f = |period_payment| {
@@ -58,16 +56,10 @@ pub fn amortise(
                 interest_method,
                 interest_type,
                 false, // Don't settle balance in secant method iterations
-                None, // Don't apply balloon payment logic during secant iterations
-                None, // Don't apply option fee during secant iterations
+                balloon_payment,
+                None, // The option fee doesn't affect the balance
             );
-            let final_balance = schedule.payments.last().unwrap().balance;
-            // For balloon payment scenarios, we want the final balance to equal the balloon payment amount
-            if let Some(balloon) = balloon_payment {
-                final_balance - balloon // Target: balance should equal balloon payment
-            } else {
-                final_balance // Normal case: target is zero balance
-            }
+            schedule.payments.last().unwrap().balance
         };
 
         let estimate_window = Decimal::from_f32(ESTIMATE_WINDOW).unwrap();
@@ -88,7 +80,7 @@ pub fn amortise(
         round_decimal(period_payment, None, None, None)
     };
 
-    let schedule = build_schedule(
+    let mut schedule = build_schedule(
         principal,
         disbursal_date,
         first_capitalisation_date,
@@ -98,10 +90,20 @@ pub fn amortise(
         period_payment,
         interest_method,
         interest_type,
-        fixed_payment.is_none() && balloon_payment.is_none(), // Only settle balance if we calculated the payment AND no balloon payment
+        fixed_payment.is_none(), // Only settle the balance if we calculated the payment
         balloon_payment,
         option_fee,
     );
+
+    let apr = calculate_annual_rate(principal, disbursal_date, &schedule.payments, true)
+        .unwrap_or(Decimal::ZERO);
+    schedule.meta.calculated_apr = apr;
+    schedule.meta.calculated_ear = if schedule.meta.total_fees.is_zero() {
+        apr
+    } else {
+        calculate_annual_rate(principal, disbursal_date, &schedule.payments, false)
+            .unwrap_or(Decimal::ZERO)
+    };
 
     schedule
 }
@@ -282,8 +284,9 @@ mod tests {
             None, // no option fee
         );
 
-        // Verify balloon payment schedule properties
-        assert_eq!(schedule_balloon.payments.len(), num_payments as usize);
+        // Verify balloon payment schedule properties: the balloon is an additional payment
+        assert_eq!(schedule_balloon.payments.len(), num_payments as usize + 1);
+        assert_components_add_up(&schedule_balloon);
         
         // Monthly payments should be lower with balloon payment
         let balloon_monthly_payment = schedule_balloon.payments[0].payment;
@@ -291,14 +294,24 @@ mod tests {
         assert!(balloon_monthly_payment < normal_monthly_payment, 
                 "Balloon payment schedule should have lower monthly payments");
 
-        // Final payment should equal the balloon payment amount
+        // The final regular payment absorbs rounding so that exactly the balloon is left
+        let final_regular = &schedule_balloon.payments[num_payments as usize - 1];
+        assert_eq!(final_regular.payment_type, PaymentType::Regular);
+        assert_eq!(final_regular.balance, balloon_payment);
+
+        // Followed by the balloon payment, on the same date
         let final_payment = schedule_balloon.payments.last().unwrap();
+        assert_eq!(final_payment.payment_type, PaymentType::Balloon);
+        assert_eq!(final_payment.date, final_regular.date);
         assert_eq!(final_payment.payment, balloon_payment, 
                 "Final payment should equal balloon payment amount");
 
         // Final balance should be zero
         assert_eq!(final_payment.balance, Decimal::ZERO, 
                 "Final balance should be zero with balloon payment");
+
+        // The cash flows must reflect the interest rate: 6% nominal -> (1 + 0.06/12)^12 - 1
+        assert_close(schedule_balloon.meta.calculated_apr, dec!(0.061678), dec!(0.0001));
 
         println!("Balloon monthly payment: {}", balloon_monthly_payment);
         println!("Normal monthly payment: {}", normal_monthly_payment);
@@ -332,21 +345,27 @@ mod tests {
             None, // no option fee
         );
 
-        // Verify schedule properties
-        assert_eq!(schedule.payments.len(), num_payments as usize);
-        
-        // All payments except the last should equal the fixed amount
-        for (i, payment) in schedule.payments.iter().enumerate() {
-            if i < (num_payments - 1) as usize {
-                assert_eq!(payment.payment, fixed_payment, 
-                          "Payment {} should equal fixed payment amount", i + 1);
-            }
+        // Verify schedule properties: every regular payment plus an additional balloon payment
+        assert_eq!(schedule.payments.len(), num_payments as usize + 1);
+        assert_components_add_up(&schedule);
+
+        for payment in &schedule.payments[..num_payments as usize] {
+            assert_eq!(payment.payment_type, PaymentType::Regular);
+            assert_eq!(payment.payment, fixed_payment,
+                      "Payment {} should equal fixed payment amount", payment.month);
         }
 
         // Final payment should equal the balloon payment
         let final_payment = schedule.payments.last().unwrap();
+        assert_eq!(final_payment.payment_type, PaymentType::Balloon);
         assert_eq!(final_payment.payment, balloon_payment, 
                 "Final payment should equal balloon payment amount");
+
+        // £800 a month is more than needed, so the overpayment shows as a negative balance
+        // rather than being written off
+        let balance_before_balloon = schedule.payments[num_payments as usize - 1].balance;
+        assert_eq!(final_payment.balance, balance_before_balloon - balloon_payment);
+        assert!(final_payment.balance < Decimal::ZERO);
 
         println!("Fixed payment: {}", fixed_payment);
         println!("Final payment: {}", final_payment.payment);
@@ -381,17 +400,18 @@ mod tests {
             None, // no option fee
         );
 
-        // Verify PCP schedule properties
-        assert_eq!(schedule.payments.len(), num_payments as usize);
+        // Verify PCP schedule properties: regular payments plus an additional balloon payment
+        assert_eq!(schedule.payments.len(), num_payments as usize + 1);
+        assert_components_add_up(&schedule);
         
-        // Monthly payments should be consistent (except final payment)
+        // Monthly payments should be consistent (except the final regular payment, which
+        // absorbs rounding so that exactly the balloon is left to pay)
         let monthly_payment = schedule.payments[0].payment;
-        for (i, payment) in schedule.payments.iter().enumerate() {
-            if i < (num_payments - 1) as usize {
-                assert!((payment.payment - monthly_payment).abs() < dec!(0.01), 
-                       "Monthly payments should be consistent in PCP");
-            }
+        for payment in &schedule.payments[..num_payments as usize - 1] {
+            assert!((payment.payment - monthly_payment).abs() < dec!(0.01), 
+                   "Monthly payments should be consistent in PCP");
         }
+        assert_eq!(schedule.payments[num_payments as usize - 1].balance, balloon_payment);
 
         // Final payment should equal the balloon payment
         let final_payment = schedule.payments.last().unwrap();
@@ -516,17 +536,23 @@ mod tests {
             Some(option_fee),
         );
 
-        // Verify HP schedule properties
-        assert_eq!(schedule.payments.len(), num_payments as usize);
+        // Verify HP schedule properties: regular payments plus an additional balloon payment
+        assert_eq!(schedule.payments.len(), num_payments as usize + 1);
+        assert_components_add_up(&schedule);
         
-        // Monthly payments should be consistent (except final payment)
+        // Monthly payments should be consistent (except the final regular payment, which
+        // absorbs rounding so that exactly the balloon is left to pay)
         let monthly_payment = schedule.payments[0].payment;
-        for (i, payment) in schedule.payments.iter().enumerate() {
-            if i < (num_payments - 1) as usize {
-                assert!((payment.payment - monthly_payment).abs() < dec!(0.01), 
-                       "Monthly payments should be consistent in HP");
-            }
+        for payment in &schedule.payments[..num_payments as usize - 1] {
+            assert!((payment.payment - monthly_payment).abs() < dec!(0.01), 
+                   "Monthly payments should be consistent in HP");
         }
+        assert_eq!(schedule.payments[num_payments as usize - 1].balance, balloon_payment);
+
+        // The option fee is part of the cost of credit (APR) but not the interest rate (EAR)
+        // 5.4% nominal, monthly: (1 + 0.054/12)^12 - 1
+        assert_close(schedule.meta.calculated_ear, dec!(0.055357), dec!(0.0001));
+        assert!(schedule.meta.calculated_apr > schedule.meta.calculated_ear);
 
         // Final payment should equal balloon payment + option fee
         let final_payment = schedule.payments.last().unwrap();
@@ -546,5 +572,131 @@ mod tests {
         // Verify the monthly payment is reasonable
         assert!(monthly_payment < dec!(350), 
                 "HP monthly payment should be reasonable for an £18k vehicle");
+    }
+
+    fn assert_close(actual: Decimal, expected: Decimal, tolerance: Decimal) {
+        assert!(
+            (actual - expected).abs() <= tolerance,
+            "expected {} ± {}, got {}",
+            expected,
+            tolerance,
+            actual
+        );
+    }
+
+    fn assert_components_add_up(schedule: &Schedule) {
+        for p in &schedule.payments {
+            assert_eq!(p.payment, p.principal + p.interest + p.fee, "row {:?}", p);
+        }
+        let meta = &schedule.meta;
+        assert_eq!(
+            meta.total_payable,
+            meta.total_principal + meta.total_interest + meta.total_fees
+        );
+    }
+
+    fn amortise_simple_case(
+        annual_rate: Decimal,
+        num_payments: u32,
+        start_year: i32,
+        interest_method: InterestMethod,
+        interest_type: InterestType,
+    ) -> Schedule {
+        amortise(
+            dec!(15000),
+            annual_rate,
+            num_payments,
+            NaiveDate::from_ymd_opt(start_year, 1, 1).unwrap(),
+            NaiveDate::from_ymd_opt(start_year, 2, 1).unwrap(),
+            NaiveDate::from_ymd_opt(start_year, 2, 1).unwrap(),
+            interest_method,
+            interest_type,
+            None,
+            None,
+            None,
+        )
+    }
+
+    #[test]
+    fn test_apr_equals_rate_entered_as_compound() {
+        // A compound rate is an effective annual rate, so with no fees the APR should match it
+        // for any term, including over leap years.
+        for num_payments in [1, 6, 12, 24, 60, 300] {
+            for start_year in [2023, 2024] {
+                let schedule = amortise_simple_case(
+                    dec!(0.05),
+                    num_payments,
+                    start_year,
+                    InterestMethod::ActualActual,
+                    InterestType::Compound,
+                );
+                assert_components_add_up(&schedule);
+                assert_eq!(schedule.meta.annual_rate, dec!(0.048889));
+                assert_close(schedule.meta.calculated_apr, dec!(0.05), dec!(0.0001));
+                assert_eq!(schedule.meta.calculated_ear, schedule.meta.calculated_apr);
+            }
+        }
+    }
+
+    #[test]
+    fn test_apr_for_rate_entered_as_simple() {
+        // A simple rate is nominal, with interest added monthly: APR = (1 + 0.05/12)^12 - 1
+        for num_payments in [1, 6, 24, 60] {
+            let schedule = amortise_simple_case(
+                dec!(0.05),
+                num_payments,
+                2025,
+                InterestMethod::ActualActual,
+                InterestType::Simple,
+            );
+            assert_eq!(schedule.meta.annual_rate, dec!(0.05));
+            assert_close(schedule.meta.calculated_apr, dec!(0.051162), dec!(0.0001));
+        }
+    }
+
+    #[test]
+    fn test_apr_for_day_count_conventions() {
+        // Actual/360 charges 365/360 of the nominal rate over a year:
+        // (1 + 0.05 * 365/360 / 12)^12 - 1
+        let schedule = amortise_simple_case(
+            dec!(0.05),
+            24,
+            2025,
+            InterestMethod::Actual360,
+            InterestType::Simple,
+        );
+        assert_close(schedule.meta.calculated_apr, dec!(0.051889), dec!(0.0001));
+
+        // 30/360 charges exactly 1/12 of the nominal rate each month, so it is close to
+        // (1 + 0.05/12)^12 - 1, differing only because months are not all the same length.
+        let schedule = amortise_simple_case(
+            dec!(0.05),
+            24,
+            2025,
+            InterestMethod::Convention30_360,
+            InterestType::Simple,
+        );
+        assert_close(schedule.meta.calculated_apr, dec!(0.051162), dec!(0.0003));
+    }
+
+    #[test]
+    fn test_option_fee_increases_apr_not_ear() {
+        let fee = amortise(
+            dec!(15000),
+            dec!(0.05),
+            24,
+            NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(),
+            NaiveDate::from_ymd_opt(2025, 2, 1).unwrap(),
+            NaiveDate::from_ymd_opt(2025, 2, 1).unwrap(),
+            InterestMethod::ActualActual,
+            InterestType::Compound,
+            None,
+            None,
+            Some(dec!(199)),
+        );
+        assert_components_add_up(&fee);
+        assert_eq!(fee.meta.total_fees, dec!(199));
+        assert_close(fee.meta.calculated_ear, dec!(0.05), dec!(0.0001));
+        assert!(fee.meta.calculated_apr > dec!(0.055));
     }
 }

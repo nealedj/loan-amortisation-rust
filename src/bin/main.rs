@@ -1,10 +1,11 @@
 use chrono::NaiveDate;
 use clap::{Arg, Command};
 use rust_decimal::prelude::*;
-use serde_json::json;
 use std::str::FromStr;
 
-use loan_amortisation_rust::amortise::{amortise, InterestMethod, InterestType, Payment};
+use loan_amortisation_rust::amortise::{
+    amortise, InterestMethod, InterestType, Payment, PaymentType,
+};
 
 fn main() {
     let matches = parse_arguments();
@@ -169,55 +170,46 @@ fn parse_arguments() -> clap::ArgMatches {
     matches
 }
 
-fn print_row(
-    month: u32,
-    payment: Decimal,
-    principal: Decimal,
-    interest: Decimal,
-    balance: Decimal,
-) {
-    println!(
-        "{:5} | {:7.2} | {:9.2} | {:8.2} | {:17.2}",
-        month, payment, principal, interest, balance
-    );
+fn payment_label(payment: &Payment) -> String {
+    match payment.payment_type {
+        PaymentType::Regular => payment.month.to_string(),
+        PaymentType::Balloon => format!("{} (balloon)", payment.month),
+    }
 }
 
 fn print_table(schedule: &[Payment]) {
     println!("\nAmortisation Schedule:");
-    println!("Month | Payment | Principal | Interest | Remaining Balance");
+    println!("Month        | Date       | Payment  | Principal | Interest | Fee     | Remaining Balance");
     for payment in schedule {
-        print_row(
-            payment.month,
+        println!(
+            "{:12} | {} | {:8.2} | {:9.2} | {:8.2} | {:7.2} | {:17.2}",
+            payment_label(payment),
+            payment.date,
             payment.payment,
             payment.principal,
             payment.interest,
-            payment.balance,
+            payment.fee,
+            payment.balance
         );
     }
 }
 
 fn print_json(schedule: &[Payment]) {
-    let json_schedule: Vec<_> = schedule
-        .iter()
-        .map(|p| {
-            json!({
-                "month": p.month,
-                "payment": p.payment,
-                "principal": p.principal,
-                "interest": p.interest,
-                "balance": p.balance,
-            })
-        })
-        .collect();
-    println!("{}", serde_json::to_string_pretty(&json_schedule).unwrap());
+    println!("{}", serde_json::to_string_pretty(schedule).unwrap());
 }
 
 fn print_tsv(schedule: &[Payment]) {
-    println!("Month\tPayment\tPrincipal\tInterest\tRemaining Balance");
+    println!("Month\tDate\tPayment\tPrincipal\tInterest\tFee\tRemaining Balance");
     for payment in schedule {
         println!(
-            "{}\t{:.2}\t{:.2}\t{:.2}\t{:.2}",
-            payment.month, payment.payment, payment.principal, payment.interest, payment.balance
+            "{}\t{}\t{:.2}\t{:.2}\t{:.2}\t{:.2}\t{:.2}",
+            payment_label(payment),
+            payment.date,
+            payment.payment,
+            payment.principal,
+            payment.interest,
+            payment.fee,
+            payment.balance
         );
     }
 }
